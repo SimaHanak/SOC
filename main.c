@@ -6,8 +6,28 @@
 
 
 double h = 1e-4;
-double acc = 1e-5;
-double max_h = 0.1;
+const double abs_tol = 1e-9;
+const double rel_tol = 1e-6;
+const double min_h = 1e-8;
+const double max_h = 0.1;
+
+static const double b[6][5] = {
+    { 0.0,       0.0,        0.0,        0.0,       0.0 },
+    { 1.0/5.0,   0.0,        0.0,        0.0,       0.0 },
+    { 3.0/40.0,  9.0/40.0,   0.0,        0.0,       0.0 },
+    { 3.0/10.0, -9.0/10.0,   6.0/5.0,    0.0,       0.0 },
+    {-11.0/54.0, 5.0/2.0,   -70.0/27.0,  35.0/27.0, 0.0 },
+    {1631.0/55296.0, 175.0/512.0, 575.0/13824.0, 44275.0/110592.0, 253.0/4096.0}
+};
+
+static const double c[6][2] = {
+    { 37.0/378.0,     2825.0/27648.0 },
+    { 0.0,            0.0 },
+    { 250.0/621.0,    18575.0/48384.0 },
+    { 125.0/594.0,    13525.0/55296.0 },
+    { 0.0,            277.0/14336.0 },
+    { 512.0/1771.0,   1.0/4.0 }
+};
 
 double* initialize_velocity(double* state_vector, double E, double L_z) {
     double** g_val = make_g(state_vector[2], 0);
@@ -80,55 +100,6 @@ double* rk4(double* state_vector) {
     return result;
 }
 
-double** make_CashKarp_b() {
-    double** b = malloc(6 * sizeof(double*));
-    for (int i = 0; i < 6; i++) {
-        b[i] = calloc(5, sizeof(double));
-    }
-    b[1][0] = 1.0/5.0;
-    b[2][0] = 3.0/40.0;
-    b[3][0] = 3.0/10.0;
-    b[4][0] = - 11.0/54.0;
-    b[5][0] = 1631.0/55296.0;
-    b[2][1] = 9.0/40.0;
-    b[3][1] = - 9.0/10.0;
-    b[4][1] = 5.0/2.0;
-    b[5][1] = 175.0/512.0;
-    b[3][2] = 6.0/5.0;
-    b[4][2] = - 70.0/27.0;
-    b[5][2] = 575.0/13824.0;
-    b[4][3] = 35.0/27.0;
-    b[5][3] = 44275.0/110592.0;
-    b[5][4] = 253.0/4096.0;
-    return b;
-}
-
-double** make_CashKarp_c() {
-    double** c = malloc(6 * sizeof(double*));
-    for (int i = 0; i < 6; i++) {
-        c[i] = calloc(2, sizeof(double));
-    }
-    c[0][0] = 37.0/378.0;
-    c[2][0] = 250.0/621.0;
-    c[3][0] = 125.0/594.0;
-    c[5][0] = 512.0/1771.0;
-    c[0][1] = 2825.0/27648.0;
-    c[2][1] = 18575.0/48384.0;
-    c[3][1] = 13525.0/55296.0;
-    c[4][1] = 277.0/14336.0;
-    c[5][1] = 1.0/4.0;
-    return c;
-}
-
-void free_CashKarp(double** b, double** c) {
-    for (int i = 0; i < 6; i++) {
-        free(b[i]);
-        free(c[i]);
-    }
-    free(b);
-    free(c);
-}
-
 double find_max(double* arr, int n) {
     double max = arr[0];
     for (int i = 1; i < n; i++) {
@@ -139,20 +110,15 @@ double find_max(double* arr, int n) {
     return max;
 }
 
-double* rk45(double* state_vector, double** b, double** c, double* h) {
+double* rk45(double* state_vector, double* h) {
     double input[8];
     double* new_state_vector = (double *)calloc(8, sizeof(double));
     double star_state_vector[8];
     double new_step;
     double error[8];
-    double** k = malloc(6 * sizeof(double*));
-    for (int i = 0; i < 6; i++) {
-        k[i] = calloc(8, sizeof(double));
-    }
+    double k[6][8];
 
     while (1) {
-        memset(new_state_vector, 0, 8 * sizeof(double));
-        memset(star_state_vector, 0, 8 * sizeof(double));
         double* tmp = eq_of_motion(state_vector);
         memcpy(k[0], tmp, 8 * sizeof(double));
         free(tmp);
@@ -170,25 +136,26 @@ double* rk45(double* state_vector, double** b, double** c, double* h) {
         }
 
         for (int y_it = 0; y_it < 8; y_it++) {
+            new_state_vector[y_it] = state_vector[y_it];
+            star_state_vector[y_it] = state_vector[y_it];
             for (int c_it = 0; c_it < 6; c_it++) {
                 new_state_vector[y_it] += k[c_it][y_it] * c[c_it][0];
                 star_state_vector[y_it] += k[c_it][y_it] * c[c_it][1];
             }
-            error[y_it] = new_state_vector[y_it] - star_state_vector[y_it];
+            double scale = abs_tol + rel_tol * fmax(fabs(state_vector[y_it]), fabs(new_state_vector[y_it]));
+            error[y_it] = fabs(new_state_vector[y_it] - star_state_vector[y_it]) / scale;
         }
 
-        new_step = (*h) * pow(acc / (find_max(error, 8) + 1e-10), 0.2);
-        if (new_step >= (*h)) {
-            (*h) = fmin(new_step, max_h);
+        double max_error = find_max(error, 8);
+        double factor = 0.9 * pow(1.0 / (max_error + 1e-10), 0.2);
+        if (max_error <= 1.0) {
+            *h = fmin(*h * fmin(factor, 5.0), max_h);
             break;
+        } else {
+            *h = fmax(*h * fmax(factor, 0.1), min_h);
         }
-        (*h) = new_step;
     }
 
-    for (int i = 0; i < 6; i++) {
-        free(k[i]);
-    }
-    free(k);
     return new_state_vector;
 }
 
@@ -264,10 +231,8 @@ void write2csv(double** arr, int N) {
 }
 
 int main() {
-    const int N = (int)1e4;
-    const int save_interval = 10;
-    double** b = make_CashKarp_b();
-    double** c = make_CashKarp_c();
+    const int N = (int)100;
+    const int save_interval = 1;
     double** trajectory = make_trajectory(N/save_interval);
     double* arr_norm = (double*)malloc(N * sizeof(double));
     double* arr_E = (double*)malloc(N * sizeof(double));
@@ -278,7 +243,8 @@ int main() {
     print_array(state_vector, 8);
 
     for (int n = 0; n < N; n++) {
-        double* new_state = rk45(state_vector, b, c, &h);
+        double* new_state = rk45(state_vector, &h);
+        //double* new_state = rk4(state_vector);
         free(state_vector);
         state_vector = new_state;
 
@@ -290,8 +256,8 @@ int main() {
             for (int j = 0; j < 8; j++) {
                 trajectory[n/save_interval][j] = state_vector[j];
             }
-            printf("Step %d/%d: normalization %.4f  E %.4f  L_z %.4f  std norm %.4f  std E %.4f  std L_z %.4f\n", 
-                n, N, arr_norm[n], arr_E[n], arr_L_z[n], std(arr_norm, n), std(arr_E, n), std(arr_L_z, n));
+            printf("Step %d/%d:  normalization %.4f  E %.4f  L_z %.4f  std norm %.4f  std E %.4f  std L_z %.4f  h %.4f\n", 
+                n+1, N, arr_norm[n], arr_E[n], arr_L_z[n], std(arr_norm, n), std(arr_E, n), std(arr_L_z, n), h);
         }
     }
 
@@ -302,7 +268,6 @@ int main() {
     free(arr_E);
     free(arr_L_z);
     free_trajectory(trajectory, N/save_interval);
-    free_CashKarp(b, c);
 
     return 0;
 } 

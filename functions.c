@@ -6,7 +6,7 @@ typedef struct {
     double M, J, M2, S3, M4;
 } Params;
 
-Params p = {1.0, 0.3, -0.1, 0.09, -0.17};
+Params p = {1.0, 0.37, -0.1, 0.09, -0.17};
 
 double pythagorean(double r, double z) {
     return r*r + z*z;
@@ -93,7 +93,7 @@ double dG_r(double r, double z) {
                                 + 12*r*r*z*z);
 
     double term2 = p.J*p.M*(+ (pow(p.M, 3) + 2*p.M2)*pow(r, 4) 
-                            - 8*(pow(p.M, 3) + 2*p.M2)*pow(z, 4)
+                            - 8*(2*pow(p.M, 3) + 2*p.M2)*pow(z, 4)
                             + 4*(pow(p.M, 3) + 10*p.M2)*r*r*z*z);
 
     double term3 = p.M*p.M*p.S3*(+ 3*pow(r, 4)
@@ -106,7 +106,10 @@ double dG_r(double r, double z) {
                                + 24*r*z*z)
                     + p.J*p.M*(+ (pow(p.M, 3) + 2*p.M2)*4*pow(r, 3)
                                - 0
-                               + 4*(pow(p.M, 3) + 10*p.M2)*2*r*z*z);
+                               + 4*(pow(p.M, 3) + 10*p.M2)*2*r*z*z)
+                    + p.M*p.M*p.S3*(+ 12*pow(r, 3)
+                                    - 0
+                                    + 24*r*z*z);
     double right = term1 + term2 + term3;
     double dleft = 2*r;
     return left*dright + right*dleft;
@@ -118,7 +121,7 @@ double dG_z(double r, double z) {
                                 + 24*r*r*z);
 
     double term2 = p.J*p.M*(+ 0 
-                            - 32*(pow(p.M, 3) + 2*p.M2)*pow(z, 3)
+                            - 32*(2*pow(p.M, 3) + 2*p.M2)*pow(z, 3)
                             + 8*(pow(p.M, 3) + 10*p.M2)*r*r*z);
 
     double term3 = p.M*p.M*p.S3*(+ 0
@@ -148,7 +151,7 @@ double f(double r, double z) {
     double term1 = 1;
     double term2 = - (2*p.M)/(sqrt(pyth));
     double term3 = (2*p.M*p.M)/(pyth);
-    double term4 = (p.M2 - pow(p.M, 3)*r*r - 2*(pow(p.M, 3) + p.M2)*z*z)/(pow(pyth, 5.0/2.0));
+    double term4 = ((p.M2 - pow(p.M, 3))*r*r - 2*(pow(p.M, 3) + p.M2)*z*z)/(pow(pyth, 5.0/2.0));
     double term5 = (2*z*z*(-p.J*p.J + pow(p.M, 4) + 2*p.M2*p.M) - 2*p.M*p.M2*r*r)/(pow(pyth, 3));
     double term6 = (A(r, z))/(28*pow(pyth, 9.0/2.0));
     double term7 = (B(r, z))/(14*pow(pyth, 5));
@@ -160,7 +163,7 @@ double df_r(double r, double z) {
     double term1 = 0;
     double term2 = (2*r*p.M)/(pow(pyth, 3.0/2.0));
     double term3 = - (4*r*p.M*p.M)/(pyth*pyth);
-    double term4 = (2*r*pow(pyth, 5.0/2.0)*(p.M2 - pow(p.M, 3)) - 5*r*pow(pyth, 3.0/2.0)*(p.M2 - pow(p.M, 3)*r*r - 2*(pow(p.M, 3) + p.M2)*z*z))/(pow(pyth, 5));
+    double term4 = (2*r*pow(pyth, 5.0/2.0)*(p.M2 - pow(p.M, 3)) - 5*r*pow(pyth, 3.0/2.0)*((p.M2 - pow(p.M, 3))*r*r - 2*(pow(p.M, 3) + p.M2)*z*z))/(pow(pyth, 5));
     double term5 = (-4*r*pow(pyth, 3)*p.M*p.M2 - 6*r*pow(pyth, 2)*(2*z*z*(-p.J*p.J + pow(p.M, 4) + 2*p.M2*p.M) - 2*p.M*p.M2*r*r))/(pow(pyth, 6));
     double term6 = (pow(pyth, 9.0/2.0)*dA_r(r, z) - 9*r*pow(pyth, 7.0/2.0)*A(r, z))/(28*pow(pyth, 9));
     double term7 = (pow(pyth, 5)*dB_r(r, z) - 10*r*pow(pyth, 4)*B(r, z))/(14*pow(pyth, 10));
@@ -172,8 +175,8 @@ double df_z(double r, double z) {
     double term1 = 0;
     double term2 = (2*z*p.M)/(pow(pyth, 3.0/2.0));
     double term3 = - (4*z*p.M*p.M)/(pyth*pyth);
-    double term4 = (-4*z*pow(pyth, 5.0/2.0)*(pow(p.M, 3) + p.M2) - 5*z*pow(pyth, 3.0/2.0)*(p.M2 - pow(p.M, 3)*r*r - 2*(pow(p.M, 3) + p.M2)*z*z))/(pow(pyth, 5));
-    double term5 = (4*z*pow(pyth, 3)*(-p.J*p.J + pow(p.M, 4) + 2*p.M2*p.M) - 6*pow(pyth, 2)*(2*z*z*(-p.J*p.J + pow(p.M, 4) + 2*p.M2*p.M) - 2*p.M*p.M2*r*r))/(pow(pyth, 6));
+    double term4 = (-4*z*pow(pyth, 5.0/2.0)*(pow(p.M, 3) + p.M2) - 5*z*pow(pyth, 3.0/2.0)*((p.M2 - pow(p.M, 3))*r*r - 2*(pow(p.M, 3) + p.M2)*z*z))/(pow(pyth, 5));
+    double term5 = (4*z*pow(pyth, 3)*(-p.J*p.J + pow(p.M, 4) + 2*p.M2*p.M) - 6*pow(pyth, 2)*z*(2*z*z*(-p.J*p.J + pow(p.M, 4) + 2*p.M2*p.M) - 2*p.M*p.M2*r*r))/(pow(pyth, 6));
     double term6 = (pow(pyth, 9.0/2.0)*dA_z(r, z) - 9*z*pow(pyth, 7.0/2.0)*A(r, z))/(28*pow(pyth, 9));
     double term7 = (pow(pyth, 5)*dB_z(r, z) - 10*z*pow(pyth, 4)*B(r, z))/(14*pow(pyth, 10));
     return term1 + term2 + term3 + term4 + term5 + term6 + term7;
@@ -247,12 +250,12 @@ double g_ff(double r, double z) { return - f(r, z)*omega(r, z)*omega(r, z) + (r*
 double dg_ff_r(double r, double z) {
     double f_val = f(r,  z);
     double omega_val = omega(r,  z);
-    return - 2*f_val*omega_val*domega_r(r, z) - df_r(r, z)*omega_val + (2*r*f_val - r*r*df_r(r, z))/(f_val*f_val); 
+    return - 2*f_val*omega_val*domega_r(r, z) - df_r(r, z)*omega_val*omega_val + (2*r*f_val - r*r*df_r(r, z))/(f_val*f_val); 
 }
 double dg_ff_z(double r, double z) {
     double f_val = f(r,  z);
     double omega_val = omega(r,  z);
-    return - 2*f_val*omega_val*domega_z(r, z) - df_z(r, z)*omega_val - (r*r*df_z(r, z))/(f_val*f_val);
+    return - 2*f_val*omega_val*domega_z(r, z) - df_z(r, z)*omega_val*omega_val - (r*r*df_z(r, z))/(f_val*f_val);
 }
 
 double g_rr(double r, double z) { return exp(2*my_gamma(r, z))/f(r, z); }
