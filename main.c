@@ -5,11 +5,11 @@
 #include <string.h>
 
 
-double h = 1e-4;
-const double abs_tol = 1e-9;
-const double rel_tol = 1e-6;
+double h = 1e-7;
+double abs_tol = 1e-10;
+double rel_tol = 1e-3;
 const double min_h = 1e-8;
-const double max_h = 0.1;
+const double max_h = 0.2;
 
 static const double b[6][5] = {
     { 0.0,       0.0,        0.0,        0.0,       0.0 },
@@ -46,17 +46,21 @@ double* initialize_velocity(double* state_vector, double E, double L_z) {
     return state_vector;
 }
 
+void print_array(double *arr, int len, char* text) {
+    printf("%s ", text);
+    for (int i = 0; i < len; i++)
+        printf("%.5f, ", arr[i]);
+    printf("\n");
+}
+
 double* eq_of_motion(double* state_vector) {
     double*** Christoffel = generate_Christoffel_symbols(state_vector[2], state_vector[3]);
 
-    double* dydt = (double*)malloc(8* sizeof(double));
+    double* dydt = (double*)calloc(8, sizeof(double));
     double vel[4];
     for (int i = 0; i < 4; i++) {
         dydt[i] = state_vector[i+4];
         vel[i] = state_vector[i+4];
-    }
-    for (int i = 4; i < 8; i++) {
-        dydt[i] = 0;
     }
 
     for (int coords = 0; coords < 4; coords++) {
@@ -139,23 +143,32 @@ double* rk45(double* state_vector, double* h) {
             new_state_vector[y_it] = state_vector[y_it];
             star_state_vector[y_it] = state_vector[y_it];
             for (int c_it = 0; c_it < 6; c_it++) {
-                new_state_vector[y_it] += k[c_it][y_it] * c[c_it][0];
-                star_state_vector[y_it] += k[c_it][y_it] * c[c_it][1];
+                new_state_vector[y_it] += (*h) * k[c_it][y_it] * c[c_it][0];
+                star_state_vector[y_it] += (*h) * k[c_it][y_it] * c[c_it][1];
             }
-            double scale = abs_tol + rel_tol * fmax(fabs(state_vector[y_it]), fabs(new_state_vector[y_it]));
-            error[y_it] = fabs(new_state_vector[y_it] - star_state_vector[y_it]) / scale;
+            double denom = abs_tol + rel_tol * fmax(fabs(state_vector[y_it]), fabs(new_state_vector[y_it]));
+            error[y_it] = fabs(new_state_vector[y_it] - star_state_vector[y_it])/denom;
         }
-
+        print_array(new_state_vector, 8, "New state vector:");
+        print_array(star_state_vector, 8, "Star state vector:");
         double max_error = find_max(error, 8);
         double factor = 0.9 * pow(1.0 / (max_error + 1e-10), 0.2);
+        factor = fmin(5.0, fmax(0.1, factor));
+        new_step = (*h) * factor;
         if (max_error <= 1.0) {
-            *h = fmin(*h * fmin(factor, 5.0), max_h);
+            *h = fmin(new_step, max_h);
             break;
-        } else {
-            *h = fmax(*h * fmax(factor, 0.1), min_h);
+        } else
+        {
+            if (new_step <= min_h) {
+                *h = min_h;
+                break;
+            } else {
+                *h = new_step;
+                continue;
+            }
         }
     }
-
     return new_state_vector;
 }
 
@@ -172,12 +185,6 @@ double std(double* arr, int n) {
         res += (arr[i] - avg)*(arr[i] - avg);
     }
     return sqrt(res/N);
-}
-
-void print_array(double *arr, int len) {
-    for (int i = 0; i < len; i++)
-        printf("%.5f, ", arr[i]);
-    printf("\n");
 }
 
 double** make_trajectory(int N) {
@@ -231,8 +238,8 @@ void write2csv(double** arr, int N) {
 }
 
 int main() {
-    const int N = (int)100;
-    const int save_interval = 1;
+    const int N = (int)1e7;
+    const int save_interval = 1e4;
     double** trajectory = make_trajectory(N/save_interval);
     double* arr_norm = (double*)malloc(N * sizeof(double));
     double* arr_E = (double*)malloc(N * sizeof(double));
@@ -240,11 +247,11 @@ int main() {
     double* state_vector = (double*)calloc(8, sizeof(double));
     state_vector[2] = 7;
     state_vector = initialize_velocity(state_vector, 0.945, 3.29);
-    print_array(state_vector, 8);
+    print_array(state_vector, 8, "State_vector: ");
 
     for (int n = 0; n < N; n++) {
-        double* new_state = rk45(state_vector, &h);
-        //double* new_state = rk4(state_vector);
+        //double* new_state = rk45(state_vector, &h);
+        double* new_state = rk4(state_vector);
         free(state_vector);
         state_vector = new_state;
 
@@ -256,8 +263,9 @@ int main() {
             for (int j = 0; j < 8; j++) {
                 trajectory[n/save_interval][j] = state_vector[j];
             }
-            printf("Step %d/%d:  normalization %.4f  E %.4f  L_z %.4f  std norm %.4f  std E %.4f  std L_z %.4f  h %.4f\n", 
-                n+1, N, arr_norm[n], arr_E[n], arr_L_z[n], std(arr_norm, n), std(arr_E, n), std(arr_L_z, n), h);
+            double percentage = (double)n/(double)N * 100;
+            printf("Step %d/%d (done %.2f percent):  normalization %.4f  E %.4f  L_z %.4f  std norm %.4f  std E %.4f  std L_z %.4f  h %.4f\n", 
+                n+1, N, percentage, arr_norm[n], arr_E[n], arr_L_z[n], std(arr_norm, n), std(arr_E, n), std(arr_L_z, n), h);
         }
     }
 
@@ -272,3 +280,17 @@ int main() {
     return 0;
 } 
 
+int main_commented() {
+    double* state_vector = (double*)calloc(8, sizeof(double));
+    state_vector[2] = 6;
+    state_vector[6] = 0.01;
+    state_vector = initialize_velocity(state_vector, 0.945, 3.29);
+    for (int i = 0; i < 30; i++) {
+        printf("Step %d\n", i);
+        print_array(state_vector, 8, "State_vector:");
+        print_array(eq_of_motion(state_vector), 8, "EoM(State_vector):");
+        printf("norm %f  E %f  L_z %f\n", norm_vel(state_vector), calculate_E(state_vector), calculate_L_z(state_vector));
+        printf("h = %f\n\n", h);
+        state_vector = rk45(state_vector, &h);
+    }
+}
