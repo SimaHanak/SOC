@@ -181,7 +181,7 @@ double* rk45(double* state_vector, double* h_ptr) {
 
         double dL_z = fabs(calculate_L_z(new_state) - calculate_L_z(state_vector));
         double dE = fabs(calculate_E(new_state) - calculate_E(state_vector));
-        if (dL_z > 1e-7 || dE > 1e-7) {
+        if (dL_z > 1e-9 || dE > 1e-9) {
             h = h*0.1;
         } else if (max_err <= 1.0) {
             *h_ptr = fmin(fmax(new_h, min_h), max_h);
@@ -230,8 +230,8 @@ double norm_vel(double* state_vector) {
 int main() {
     FILE *ftpr;
     ftpr = fopen("trajectory.csv", "w");
-    const unsigned long int N = 1e5;
-    size_t save_interval = 1e3;
+    const unsigned long int N = (int)1e5;
+    size_t save_interval = (int)1e3;
     double* arr_norm = (double*)malloc(N/save_interval * sizeof(double));
     double* arr_E = (double*)malloc(N/save_interval * sizeof(double));
     double* arr_L_z = (double*)malloc(N/save_interval * sizeof(double));
@@ -252,7 +252,7 @@ int main() {
             arr_L_z[index] = calculate_L_z(state_vector);
 
             double percentage = (double)n/(double)N * 100;
-            printf("Step %d/%d (done %.2f percent):  normalization %.4f  E %.4f  L_z %.4f  std norm %.4f  std E %.4f  std L_z %.4f  h %.4f\n", 
+            printf("Step %d/%ld (done %.2f percent):  normalization %.4f  E %.4f  L_z %.4f  std norm %.4f  std E %.4f  std L_z %.4f  h %1.4e\n", 
                 n+1, N, percentage, arr_norm[index], arr_E[index], arr_L_z[index], std(arr_norm, index), std(arr_E, index), std(arr_L_z, index), h);
 
             fprintf(ftpr, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", 

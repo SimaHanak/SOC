@@ -419,3 +419,16 @@ void free_Christoffel(double*** Christoffel) {
     }
     free(Christoffel);
 }
+
+int main() {
+    double** g_val = make_g(7, 0.2);
+    for (int row=0; row<4; row++) {
+        for (int col=0; col<4; col++) {
+            printf("%f, ", g_val[row][col]);
+        }
+        printf("\n");
+    }
+    free_g(g_val);
+    double tmp = g_ff(7, 0.2);
+    printf("%f\n", tmp);
+}
