@@ -6,7 +6,7 @@ typedef struct {
     double M, J, M2, S3, M4;
 } Params;
 
-Params p = {1.0, 0.37, -0.1, 0.09, -0.17};
+Params p = {1.0, 0.3, -0.1, 0.05, 0.01};
 
 double pythagorean(double r, double z) {
     return r*r + z*z;
