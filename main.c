@@ -4,14 +4,19 @@
 #include <math.h>
 #include <string.h>
 
-const double L_z = 3.29;
-const double E = 0.945;
+const double L_z = 3;
+const double E = 0.95;
+const double init_r = 5;
+const double init_ur = 0;
+const Params p = {.M = 1.0, .J = 0.3, .M2 = -0.1, .S3 = 0.05, .M4 = 0.01};
 
-double h = 1e-6;
+double h = 1e-4;
 const double abs_tol = 1e-10;
 const double rel_tol = 1e-8;
 const double max_h = 1e-1;
 const double min_h = 1e-8;
+const double poincare_tol = 5e-5;
+#define M_PI 3.14159265358979323846
 
 static const double b[6][5] = {
     { 0.0,       0.0,        0.0,        0.0,       0.0 },
@@ -32,8 +37,8 @@ static const double c[6][2] = {
 };
 
 double* initialize_velocity(double* state_vector) {
-    double** g_val = make_g(state_vector[2], 0);
-    double** g_inv_val = make_g_inv(state_vector[2], 0);
+    double** g_val = make_g(state_vector[2], 0, &p);
+    double** g_inv_val = make_g_inv(state_vector[2], 0, &p);
     state_vector[4] = - g_inv_val[0][0]*E + g_inv_val[1][0]*L_z;
     state_vector[5] = g_inv_val[1][1]*L_z - g_inv_val[1][0]*E;
     state_vector[7] = sqrt((- 1
@@ -56,7 +61,7 @@ void print_array(double *arr, int len, char* text) {
 }
 
 double* eq_of_motion(double* state_vector) {
-    double*** Christoffel = generate_Christoffel_symbols(state_vector[2], state_vector[3]);
+    double*** Christoffel = generate_Christoffel_symbols(state_vector[2], state_vector[3], &p);
 
     double* dydt = (double*)calloc(8, sizeof(double));
     double vel[4];
@@ -107,14 +112,14 @@ double* rk4(double* state_vector) {
 }
 
 double calculate_E(double* state_vector) {
-    double** g_val = make_g(state_vector[2], state_vector[3]);
+    double** g_val = make_g(state_vector[2], state_vector[3], &p);
     double E = - g_val[0][0]*state_vector[4] - g_val[0][1]*state_vector[5];
     free_g(g_val);
     return E;
 }
 
 double calculate_L_z(double* state_vector) {
-    double** g_val = make_g(state_vector[2], state_vector[3]);
+    double** g_val = make_g(state_vector[2], state_vector[3], &p);
     double L_z = g_val[1][1]*state_vector[5] + g_val[0][1]*state_vector[4];
     free_g(g_val);
     return L_z;
@@ -131,6 +136,7 @@ double find_max(double* arr, int n) {
     return max;
 }
 
+/*
 double* rk45(double* state_vector, double* h_ptr) {
     double h = *h_ptr;
     double* new_state = calloc(8, sizeof(double));
@@ -143,7 +149,7 @@ double* rk45(double* state_vector, double* h_ptr) {
         // k1 = f(t, y)
         double* k_temp = eq_of_motion(state_vector);
         memcpy(k[0], k_temp, 8 * sizeof(double));
-        free(k_temp);
+        free(k_tem&p);
 
         // Compute k2 to k6
         for (int i = 1; i < 6; i++) {
@@ -153,9 +159,9 @@ double* rk45(double* state_vector, double* h_ptr) {
                     temp[j] += h * b[i][m] * k[m][j];
                 }
             }
-            k_temp = eq_of_motion(temp);
+            k_temp = eq_of_motion(tem&p);
             memcpy(k[i], k_temp, 8 * sizeof(double));
-            free(k_temp);
+            free(k_tem&p);
         }
 
         // Compute new state (4th and 5th order solutions)
@@ -200,6 +206,7 @@ double* rk45(double* state_vector, double* h_ptr) {
     free(error);
     return new_state;
 }
+*/
 
 double std(double* arr, int n) {
     if (n <= 0) return 0.0;
@@ -217,7 +224,7 @@ double std(double* arr, int n) {
 }
 
 double norm_vel(double* state_vector) {
-    double** g_val = make_g(state_vector[2], state_vector[3]);
+    double** g_val = make_g(state_vector[2], state_vector[3], &p);
     double norm = + g_val[0][0] * state_vector[4] * state_vector[4]
                   + g_val[1][1] * state_vector[5] * state_vector[5] 
                   + 2*g_val[1][0] * state_vector[4] * state_vector[5] 
@@ -230,21 +237,30 @@ double norm_vel(double* state_vector) {
 int main() {
     FILE *ftpr;
     ftpr = fopen("trajectory.csv", "w");
-    const unsigned long int N = (int)1e5;
+    const unsigned long int N = (int)1e9;
     size_t save_interval = (int)1e3;
     double* arr_norm = (double*)malloc(N/save_interval * sizeof(double));
     double* arr_E = (double*)malloc(N/save_interval * sizeof(double));
     double* arr_L_z = (double*)malloc(N/save_interval * sizeof(double));
     double* state_vector = (double*)calloc(8, sizeof(double));
-    state_vector[2] = 7.5;
+    state_vector[2] = init_r;
+    state_vector[6] = init_ur;
     state_vector = initialize_velocity(state_vector);
+    fprintf(ftpr, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
     print_array(state_vector, 8, "State_vector: ");
     for (int n = 0; n < N; n++) {
-        double* new_state = rk45(state_vector, &h);
-        //double* new_state = rk4(state_vector);
+        //double* new_state = rk45(state_vector, &h);
+        double* new_state = rk4(state_vector);
         free(state_vector);
         state_vector = new_state;
-
+        if (state_vector[2] < 0.5) {
+            return 0;
+        }
+        double modulo_f = fmod(state_vector[1], M_PI);
+        if (modulo_f < poincare_tol || M_PI - poincare_tol < modulo_f) {
+            fprintf(ftpr, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", 
+                state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
+        }
         if (n%save_interval == 0) {
             int index = n/save_interval;
             arr_norm[index] = norm_vel(state_vector);
@@ -269,6 +285,7 @@ int main() {
     return 0;
 } 
 
+/*
 int main_commented() {
     double* state_vector = (double*)calloc(8, sizeof(double));
     state_vector[2] = 6;
@@ -283,3 +300,4 @@ int main_commented() {
         state_vector = rk45(state_vector, &h);
     }
 }
+*/
