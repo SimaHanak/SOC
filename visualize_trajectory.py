@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 
-with open(r"C:\Users\simon\Documents\[01] School\[02] SOC\SOC\trajectory.csv", 'r') as file:
+with open(r"/home/shanak/Documents/[01] Studium/SOČ/trajectory.csv", 'r') as file:
     reader = csv.reader(file)
     data = list(reader)
     data = [list(map(float, row)) for row in data[1:-1]]
@@ -26,8 +26,8 @@ ax1.scatter(data[:, 2]*np.sin(data[:, 1]), data[:, 2]*np.cos(data[:, 1]), data[:
 poincare_map = []
 margin = 1e-2
 for i in range(len(data)):
-    if - margin < data[i, 1]%np.pi < margin or (np.pi - margin) < data[i, 1]%np.pi < (np.pi + margin):
-        poincare_map.append(data[i]) 
+    if - margin < data[i, 3]%np.pi < margin:
+        poincare_map.append(data[i])
 poincare_map = np.array(poincare_map)
 ax2.scatter(poincare_map[:, 2], poincare_map[:, 6], s=1, c=poincare_map[:, 0], cmap='viridis', marker='o')
 plt.colorbar(ax1.collections[0], label='t')
