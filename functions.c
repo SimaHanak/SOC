@@ -417,3 +417,53 @@ void free_Christoffel(double*** Christoffel) {
     free(Christoffel);
 }
 
+
+const double L_z = 3;
+const double E = 0.95;
+const Params p = {.M = 1.0, .J = 0.3, .M2 = -0.1, .S3 = 0.05, .M4 = 0.01};
+
+double* initialize_velocity(double* state_vector) {
+    double** g_val = make_g(state_vector[2], 0, &p);
+    double** g_inv_val = make_g_inv(state_vector[2], 0, &p);
+    state_vector[4] = - g_inv_val[0][0]*E + g_inv_val[1][0]*L_z;
+    state_vector[5] = g_inv_val[1][1]*L_z - g_inv_val[1][0]*E;
+    state_vector[7] = sqrt((- 1
+                            - g_val[0][0] * state_vector[4] * state_vector[4]
+                            - g_val[1][1] * state_vector[5] * state_vector[5] 
+                            - 2*g_val[1][0] * state_vector[4] * state_vector[5] 
+                            - g_val[2][2] * state_vector[6] * state_vector[6])/g_val[3][3]);
+
+    free_g(g_val);
+    free_g_inv(g_inv_val);
+
+    return state_vector;
+}
+
+int main() {
+    double* state_vector = (double*)calloc(8, sizeof(double));
+    state_vector[2] = 7;
+    state_vector[6] = 0.2;
+    state_vector = initialize_velocity(state_vector);
+    for (int i=0;i<8;i++){
+        printf("%f ", state_vector[i]);
+    }
+    printf("\n");
+    double*** Christoffel = generate_Christoffel_symbols(7, 0.2, &p);
+    for (int i=0;i<4;i++) {
+        for (int j=0;j<4;j++) {
+            for (int k=0;k<4;k++) {
+                printf("%f ", Christoffel[i][j][k]);
+            }
+            printf("\n");
+        }
+        printf("\n");   
+    }
+    printf("\n\n");
+    double** g_val = make_g(7, 0.2, &p);
+    for (int i=0;i<4;i++) {
+        for (int j=0;j<4;j++) {
+            printf("%f ", g_val[i][j]);
+        }
+        printf("\n");   
+    }
+}
