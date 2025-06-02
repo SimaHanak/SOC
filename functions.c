@@ -3,71 +3,71 @@
 #include <math.h>
 #include "functions.h"
 
-double pythagorean(double r, double z, const Params *p) {
+double pythagorean(double r, double z, Params *p) {
     return r*r + z*z;
 }
 
-double A(double r, double z, const Params *p) {
+double A(double r, double z, Params *p) {
     double term1 = 8*r*r*z*z*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
     double term2 = pow(r, 4)*(-10*(*p).J*(*p).J*(*p).M + 7*pow((*p).M, 5) + 32*(*p).M2*(*p).M*(*p).M - 21*(*p).M4);
     double term3 = 8*pow(z, 4)*(20*(*p).J*(*p).J*(*p).M - 7*pow((*p).M, 5) - 22*(*p).M2*(*p).M*(*p).M - 7*(*p).M4);
     return term1 + term2 + term3;
 }
 
-double dA_r(double r, double z, const Params *p) {
+double dA_r(double r, double z, Params *p) {
     double term1 = 16*r*z*z*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
     double term2 = 4*pow(r, 3)*(-10*(*p).J*(*p).J*(*p).M + 7*pow((*p).M, 5) + 32*(*p).M2*(*p).M*(*p).M - 21*(*p).M4);
     double term3 = 0;
     return term1 + term2 + term3;
 }
 
-double dA_z(double r, double z, const Params *p) {
+double dA_z(double r, double z, Params *p) {
     double term1 = 16*r*r*z*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
     double term2 = 0;
     double term3 = 32*pow(z, 3)*(20*(*p).J*(*p).J*(*p).M - 7*pow((*p).M, 5) - 22*(*p).M2*(*p).M*(*p).M - 7*(*p).M4);
     return term1 + term2 + term3;
 }
 
-double B(double r, double z, const Params *p) {
+double B(double r, double z, Params *p) {
     double term1 = pow(r, 4)*(10*(*p).J*(*p).J + 10*(*p).M2*pow((*p).M, 3) + 21*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     double term2 = 4*pow(z, 4)*(-40*(*p).J*(*p).J*(*p).M*(*p).M - 14*(*p).J*(*p).S3 + 7*pow((*p).M, 6) + 30*(*p).M2*pow((*p).M, 3) + 14*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     double term3 = - 4*r*r*z*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*pow((*p).M, 6) + 48*(*p).M2*pow((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     return term1 + term2 + term3;
 }
 
-double dB_r(double r, double z, const Params *p) {
+double dB_r(double r, double z, Params *p) {
     double term1 = 4*pow(r, 3)*(10*(*p).J*(*p).J + 10*(*p).M2*pow((*p).M, 3) + 21*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     double term2 = 0;
     double term3 = - 8*r*z*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*pow((*p).M, 6) + 48*(*p).M2*pow((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     return term1 + term2 + term3;
 }
 
-double dB_z(double r, double z, const Params *p) {
+double dB_z(double r, double z, Params *p) {
     double term1 = 0;
     double term2 = 16*pow(z, 3)*(-40*(*p).J*(*p).J*(*p).M*(*p).M - 14*(*p).J*(*p).S3 + 7*pow((*p).M, 6) + 30*(*p).M2*pow((*p).M, 3) + 14*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     double term3 = - 8*r*r*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*pow((*p).M, 6) + 48*(*p).M2*pow((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     return term1 + term2 + term3;
 }
 
-double H(double r, double z, const Params *p) {
+double H(double r, double z, Params *p) {
     double term1 = 4*r*r*z*z*((*p).J*((*p).M2 - 2*pow((*p).M, 3)) - 3*(*p).M*(*p).S3);
     double term2 = pow(r, 4)*((*p).J*(*p).M2 + 3*(*p).M*(*p).S3);
     return term1 + term2;
 }
 
-double dH_r(double r, double z, const Params *p) {
+double dH_r(double r, double z, Params *p) {
     double term1 = 8*r*z*z*((*p).J*((*p).M2 - 2*pow((*p).M, 3)) - 3*(*p).M*(*p).S3);
     double term2 = 4*pow(r, 3)*((*p).J*(*p).M2 + 3*(*p).M*(*p).S3);
     return term1 + term2;
 }
 
-double dH_z(double r, double z, const Params *p) {
+double dH_z(double r, double z, Params *p) {
     double term1 = 8*r*r*z*((*p).J*((*p).M2 - 2*pow((*p).M, 3)) - 3*(*p).M*(*p).S3);
     double term2 = 0;
     return term1 + term2;
 }
 
-double G(double r, double z, const Params *p) {
+double G(double r, double z, Params *p) {
     double term1 = pow((*p).J, 3)*(- pow(r, 4)
                                 - 8*pow(z, 4)
                                 + 12*r*r*z*z);
@@ -82,7 +82,7 @@ double G(double r, double z, const Params *p) {
     return r*r*(term1 + term2 + term3);
 }
 
-double dG_r(double r, double z, const Params *p) {
+double dG_r(double r, double z, Params *p) {
     double term1 = pow((*p).J, 3)*(- pow(r, 4)
                                 - 8*pow(z, 4)
                                 + 12*r*r*z*z);
@@ -110,7 +110,7 @@ double dG_r(double r, double z, const Params *p) {
     return left*dright + right*dleft;
 }
 
-double dG_z(double r, double z, const Params *p) {
+double dG_z(double r, double z, Params *p) {
     double term1 = pow((*p).J, 3)*(- 0
                                 - 32*pow(z, 3)
                                 + 24*r*r*z);
@@ -126,22 +126,22 @@ double dG_z(double r, double z, const Params *p) {
     return r*r*(term1 + term2 + term3);
 }
 
-double F(double r, double z, const Params *p) {
+double F(double r, double z, Params *p) {
     return (+ pow(r, 4)*((*p).S3 - (*p).J*(*p).M*(*p).M)
             - 4*r*r*z*z*((*p).J*(*p).M*(*p).M + (*p).S3));
 }
 
-double dF_r(double r, double z, const Params *p) {
+double dF_r(double r, double z, Params *p) {
     return (+ 4*pow(r, 3)*((*p).S3 - (*p).J*(*p).M*(*p).M)
             - 8*r*z*z*((*p).J*(*p).M*(*p).M + (*p).S3)); 
 }
 
-double dF_z(double r, double z, const Params *p) {
+double dF_z(double r, double z, Params *p) {
     return (+ 0
             - 8*r*r*z*((*p).J*(*p).M*(*p).M + (*p).S3)); 
 }
 
-double f(double r, double z, const Params *p) {
+double f(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = 1;
     double term2 = - (2*(*p).M)/(sqrt(pyth));
@@ -153,7 +153,7 @@ double f(double r, double z, const Params *p) {
     return term1 + term2 + term3 + term4 + term5 + term6 + term7;
 }
 
-double df_r(double r, double z, const Params *p) {
+double df_r(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = 0;
     double term2 = (2*r*(*p).M)/(pow(pyth, 3.0/2.0));
@@ -165,7 +165,7 @@ double df_r(double r, double z, const Params *p) {
     return term1 + term2 + term3 + term4 + term5 + term6 + term7;
 }
 
-double df_z(double r, double z, const Params *p) {
+double df_z(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = 0;
     double term2 = (2*z*(*p).M)/(pow(pyth, 3.0/2.0));
@@ -177,7 +177,7 @@ double df_z(double r, double z, const Params *p) {
     return term1 + term2 + term3 + term4 + term5 + term6 + term7;
 }
 
-double omega(double r, double z, const Params *p) {
+double omega(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = - (2*(*p).J*r*r)/(pow(pyth, 3.0/2.0));
     double term2 = - (2*(*p).J*(*p).M*r*r)/(pyth*pyth);
@@ -187,7 +187,7 @@ double omega(double r, double z, const Params *p) {
     return term1 + term2 + term3 + term4 + term5;
 }
 
-double domega_r(double r, double z, const Params *p) {
+double domega_r(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = - (4*r*pow(pyth, 3.0/2.0)*(*p).J - 6*pow(r, 3)*pow(pyth, 1.0/2.0)*(*p).J)/(pow(pyth, 3));
     double term2 = - (4*r*pyth*pyth*(*p).J*(*p).M - 8*pow(r, 3)*pyth*(*p).J*(*p).M)/(pow(pyth, 4));
@@ -197,7 +197,7 @@ double domega_r(double r, double z, const Params *p) {
     return term1 + term2 + term3 + term4 + term5;
 }
 
-double domega_z(double r, double z, const Params *p) {
+double domega_z(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = + (6*r*r*z*pow(pyth, 1.0/2.0)*(*p).J)/(pow(pyth, 3));
     double term2 = + (8*r*r*z*pyth*(*p).J*(*p).M)/(pow(pyth, 4));
@@ -207,14 +207,14 @@ double domega_z(double r, double z, const Params *p) {
     return term1 + term2 + term3 + term4 + term5;
 }
 
-double my_gamma(double r, double z, const Params *p) {
+double my_gamma(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = + (r*r*((*p).J*(*p).J*(r*r - 8*z*z) + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*(r*r - 4*z*z)))/(4*pow(pyth, 4));
     double term2 = - ((*p).M*(*p).M*r*r)/(2*pyth*pyth);
     return term1 + term2;
 }
 
-double dgamma_r(double r, double z, const Params *p) {
+double dgamma_r(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double left = r*r;
     double dright = (*p).J*(*p).J*2*r + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*2*r;
@@ -226,59 +226,56 @@ double dgamma_r(double r, double z, const Params *p) {
     return term1 + term2;
 }
 
-double dgamma_z(double r, double z, const Params *p) {
+double dgamma_z(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
     double term1 = + (4*r*r*pow(pyth, 4)*(-(*p).J*(*p).J*16*z - (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*8*z) - 32*r*r*z*pow(pyth, 3)*((*p).J*(*p).J*(r*r - 8*z*z) + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*(r*r - 4*z*z)))/(16*pow(pyth, 8));
     double term2 = + (8*r*r*z*pyth)/(4*pow(pyth, 4));
     return term1 + term2;
 }
 
-double g_tt(double r, double z, const Params *p) { return - f(r, z, p); }
-double dg_tt_r(double r, double z, const Params *p) { return - df_r(r, z, p); }
-double dg_tt_z(double r, double z, const Params *p) { return - df_z(r, z, p); }
+double g_tt(double r, double z, Params *p) { return - f(r, z, p); }
+double dg_tt_r(double r, double z, Params *p) { return - df_r(r, z, p); }
+double dg_tt_z(double r, double z, Params *p) { return - df_z(r, z, p); }
 
-double g_tf(double r, double z, const Params *p) { return omega(r, z, p)*f(r, z, p); }
-double dg_tf_r(double r, double z, const Params *p) { return omega(r, z, p)*df_r(r, z, p) + domega_r(r, z, p)*f(r, z, p); }
-double dg_tf_z(double r, double z, const Params *p) { return omega(r, z, p)*df_z(r, z, p) + domega_z(r, z, p)*f(r, z, p); }
+double g_tf(double r, double z, Params *p) { return omega(r, z, p)*f(r, z, p); }
+double dg_tf_r(double r, double z, Params *p) { return omega(r, z, p)*df_r(r, z, p) + domega_r(r, z, p)*f(r, z, p); }
+double dg_tf_z(double r, double z, Params *p) { return omega(r, z, p)*df_z(r, z, p) + domega_z(r, z, p)*f(r, z, p); }
 
-double g_ff(double r, double z, const Params *p) { return - f(r, z, p)*omega(r, z, p)*omega(r, z, p) + (r*r)/f(r, z, p); }
-double dg_ff_r(double r, double z, const Params *p) {
+double g_ff(double r, double z, Params *p) { return - f(r, z, p)*pow(omega(r, z, p), 2) + (r*r)/f(r, z, p); }
+double dg_ff_r(double r, double z, Params *p) {
     double f_val = f(r, z, p);
     double omega_val = omega(r, z, p);
     return - 2*f_val*omega_val*domega_r(r, z, p) - df_r(r, z, p)*omega_val*omega_val + (2*r*f_val - r*r*df_r(r, z, p))/(f_val*f_val); 
 }
-double dg_ff_z(double r, double z, const Params *p) {
+double dg_ff_z(double r, double z, Params *p) {
     double f_val = f(r, z, p);
     double omega_val = omega(r, z, p);
     return - 2*f_val*omega_val*domega_z(r, z, p) - df_z(r, z, p)*omega_val*omega_val - (r*r*df_z(r, z, p))/(f_val*f_val);
 }
 
-double g_rr(double r, double z, const Params *p) { return exp(2*my_gamma(r, z, p))/f(r, z, p); }
-double dg_rr_r(double r, double z, const Params *p) { 
+double g_rr(double r, double z, Params *p) { return exp(2*my_gamma(r, z, p))/f(r, z, p); }
+double dg_rr_r(double r, double z, Params *p) { 
     double f_val = f(r, z, p);
     double e_2gamma = exp(2*my_gamma(r, z, p));
     return (f_val*e_2gamma*2*dgamma_r(r, z, p) - e_2gamma*df_r(r, z, p))/(f_val*f_val); 
 }
-double dg_rr_z(double r, double z, const Params *p) { 
+double dg_rr_z(double r, double z, Params *p) { 
     double f_val = f(r, z, p);
     double e_2gamma = exp(2*my_gamma(r, z, p));
     return (f_val*e_2gamma*2*dgamma_z(r, z, p) - e_2gamma*df_z(r, z, p))/(f_val*f_val); 
 }
 
-double Det(double r, double z, const Params *p) {return g_tt(r, z, p)*g_ff(r, z, p) - g_tf(r, z, p)*g_tf(r, z, p); }
+double Det(double r, double z, Params *p) {return g_tt(r, z, p)*g_ff(r, z, p) - pow(g_tf(r, z, p), 2); }
 
-double** make_g(double r, double z, const Params *p){
+double** make_g(){
     double** g = malloc(4 * sizeof(double*));
     for (int i = 0; i < 4; i++) {
-        g[i] = malloc(4* sizeof(double));
+        g[i] = calloc(4, sizeof(double));
     }
+    return g;
+}
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            g[i][j] = 0;
-        }
-    }
-
+void update_g(double r, double z, double** g, Params *p) {
     g[0][0] = g_tt(r, z, p);
     g[0][1] = g_tf(r, z, p);
 
@@ -288,8 +285,6 @@ double** make_g(double r, double z, const Params *p){
     g[2][2] = g_rr(r, z, p);
 
     g[3][3] = g_rr(r, z, p);
-
-    return g;
 }
 
 void free_g(double** g) {
@@ -299,18 +294,16 @@ void free_g(double** g) {
     free(g);
 }
 
-double** make_g_inv(double r, double z, const Params *p) {
+double** make_g_inv() {
     double** g_inv = malloc(4 * sizeof(double*));
     for (int i = 0; i < 4; i++) {
-        g_inv[i] = malloc(4* sizeof(double));
+        g_inv[i] = calloc(4, sizeof(double));
     }
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            g_inv[i][j] = 0;
-        }
-    }
+    return g_inv;
+}
 
+void update_g_inv(double r, double z, double** g_inv, Params *p) {
     double Det_val = Det(r, z, p);
 
     g_inv[0][0] = g_ff(r, z, p)/Det_val;
@@ -322,8 +315,6 @@ double** make_g_inv(double r, double z, const Params *p) {
     g_inv[2][2] = 1/g_rr(r, z, p);
 
     g_inv[3][3] = 1/g_rr(r, z, p);
-
-    return g_inv;
 }
 
 void free_g_inv(double** g_inv) {
@@ -333,23 +324,19 @@ void free_g_inv(double** g_inv) {
     free(g_inv);
 }
 
-double*** make_dg(double r, double z, const Params *p) {
+double*** make_dg() {
     double*** dg = malloc(4 * sizeof(double**));
     for (int i = 0; i < 4; ++i) {
         dg[i] = malloc(4 * sizeof(double*));
         for (int j = 0; j < 4; ++j) {
-            dg[i][j] = malloc(4 * sizeof(double));
+            dg[i][j] = calloc(4, sizeof(double));
         }
     }
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            for (int k = 0; k < 4; k++) {
-                dg[i][j][k] = 0;
-            }
-        }
-    }
+    return dg;
+}
 
+void update_dg(double r, double z, double*** dg, Params *p) {
     dg[2][0][0] = dg_tt_r(r, z, p);
     dg[2][0][1] = dg_tf_r(r, z, p);
     dg[2][1][0] = dg_tf_r(r, z, p);
@@ -363,8 +350,6 @@ double*** make_dg(double r, double z, const Params *p) {
     dg[3][1][1] = dg_ff_z(r, z, p);
     dg[3][2][2] = dg_rr_z(r, z, p);
     dg[3][3][3] = dg_rr_z(r, z, p);
-
-    return dg;
 }
 
 void free_dg(double*** dg) {
@@ -377,10 +362,11 @@ void free_dg(double*** dg) {
     free(dg);
 }
 
-double*** generate_Christoffel_symbols(double r, double z, const Params *p) {
-    double** g_val = make_g(r, z, p);
-    double*** dg_val = make_dg(r, z, p);
-    double** g_inv_val = make_g_inv(r, z, p);
+double*** generate_Christoffel_symbols(double r, double z, Params *p, double** g, double** g_inv, double*** dg) {
+    update_g(r, z, g, p);
+    update_dg(r, z, dg, p);
+    update_g_inv(r, z, g_inv, p);
+
     double*** Christoffel = malloc(4 * sizeof(double**));
     for (int i = 0; i < 4; ++i) {
         Christoffel[i] = malloc(4 * sizeof(double*));
@@ -394,16 +380,11 @@ double*** generate_Christoffel_symbols(double r, double z, const Params *p) {
             for (int lambda = 0; lambda < 4 ; lambda++){
                 Christoffel[mu][kappa][lambda] = 0;
                 for (int sigma = 0; sigma < 4 ; sigma++){
-                    Christoffel[mu][kappa][lambda] += 0.5*g_inv_val[mu][sigma]*(dg_val[lambda][sigma][kappa] + dg_val[kappa][lambda][sigma] - dg_val[sigma][kappa][lambda]);
+                    Christoffel[mu][kappa][lambda] += 0.5*g_inv[mu][sigma]*(dg[lambda][sigma][kappa] + dg[kappa][lambda][sigma] - dg[sigma][kappa][lambda]);
                 }
             }
         }
     }
-
-    free_g(g_val);
-    free_g_inv(g_inv_val);
-    free_dg(dg_val);
-
     return Christoffel;
 }
 
@@ -417,10 +398,10 @@ void free_Christoffel(double*** Christoffel) {
     free(Christoffel);
 }
 
-
+/*
 const double L_z = 3;
 const double E = 0.95;
-const Params p = {.M = 1.0, .J = 0.3, .M2 = -0.1, .S3 = 0.05, .M4 = 0.01};
+Params p = {.M = 1.0, .J = 0.3, .M2 = -0.1, .S3 = 0.05, .M4 = 0.01};
 
 double* initialize_velocity(double* state_vector) {
     double** g_val = make_g(state_vector[2], 0, &p);
@@ -467,3 +448,4 @@ int main() {
         printf("\n");   
     }
 }
+*/

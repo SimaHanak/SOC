@@ -3,19 +3,21 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <windows.h>
+#include <time.h>
 
 const double L_z = 3;
 const double E = 0.95;
-const double init_r = 5;
+//const double init_r = 5;
 const double init_ur = 0;
-const Params p = {.M = 1.0, .J = 0.3, .M2 = -0.1, .S3 = 0.05, .M4 = 0.01};
+const double M = 1.0;
+const double J = 0.3;
+const double alpha_const = 1;
+const double beta_const = 1;
+const double gamma_const = 1;
 
 double h = 1e-4;
-const double abs_tol = 1e-10;
-const double rel_tol = 1e-8;
-const double max_h = 1e-1;
-const double min_h = 1e-8;
-const double poincare_tol = 5e-5;
+const double poincare_tol = 1e-4;
 #define M_PI 3.14159265358979323846
 
 static const double b[6][5] = {
@@ -36,19 +38,16 @@ static const double c[6][2] = {
     { 512.0/1771.0,   1.0/4.0 }
 };
 
-double* initialize_velocity(double* state_vector) {
-    double** g_val = make_g(state_vector[2], 0, &p);
-    double** g_inv_val = make_g_inv(state_vector[2], 0, &p);
-    state_vector[4] = - g_inv_val[0][0]*E + g_inv_val[1][0]*L_z;
-    state_vector[5] = g_inv_val[1][1]*L_z - g_inv_val[1][0]*E;
+double* initialize_velocity(double* state_vector, Params* p, double** g, double** g_inv, double*** dg) {
+    update_g(state_vector[2], state_vector[3], g, p);
+    update_g_inv(state_vector[2], state_vector[3], g_inv, p);
+    state_vector[4] = - g_inv[0][0]*E + g_inv[1][0]*L_z;
+    state_vector[5] = g_inv[1][1]*L_z - g_inv[1][0]*E;
     state_vector[7] = sqrt((- 1
-                            - g_val[0][0] * state_vector[4] * state_vector[4]
-                            - g_val[1][1] * state_vector[5] * state_vector[5] 
-                            - 2*g_val[1][0] * state_vector[4] * state_vector[5] 
-                            - g_val[2][2] * state_vector[6] * state_vector[6])/g_val[3][3]);
-
-    free_g(g_val);
-    free_g_inv(g_inv_val);
+                            - g[0][0] * state_vector[4] * state_vector[4]
+                            - g[1][1] * state_vector[5] * state_vector[5] 
+                            - 2*g[1][0] * state_vector[4] * state_vector[5] 
+                            - g[2][2] * state_vector[6] * state_vector[6])/g[3][3]);
 
     return state_vector;
 }
@@ -60,8 +59,8 @@ void print_array(double *arr, int len, char* text) {
     printf("\n");
 }
 
-double* eq_of_motion(double* state_vector) {
-    double*** Christoffel = generate_Christoffel_symbols(state_vector[2], state_vector[3], &p);
+double* eq_of_motion(double* state_vector, Params* p, double** g, double** g_inv, double*** dg) {
+    double*** Christoffel = generate_Christoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg);
 
     double* dydt = (double*)calloc(8, sizeof(double));
     double vel[4];
@@ -83,21 +82,21 @@ double* eq_of_motion(double* state_vector) {
     return dydt;
 }
 
-double* rk4(double* state_vector) {
+double* rk4(double* state_vector, Params* p, double** g, double** g_inv, double*** dg) {
     double input[8];
-    double* k1 = eq_of_motion(state_vector);
+    double* k1 = eq_of_motion(state_vector, p, g, g_inv, dg);
     for (int i = 0; i < 8; i++) {
         input[i] = state_vector[i] + h * k1[i]/2.0;
     }
-    double* k2 = eq_of_motion(input);
+    double* k2 = eq_of_motion(input, p, g, g_inv, dg);
     for (int i = 0; i < 8; i++) {
         input[i] = state_vector[i] + h * k2[i]/2.0;
     }
-    double* k3 = eq_of_motion(input);
+    double* k3 = eq_of_motion(input, p, g, g_inv, dg);
     for (int i = 0; i < 8; i++) {
         input[i] = state_vector[i] + h * k3[i];
     }
-    double* k4 = eq_of_motion(input);
+    double* k4 = eq_of_motion(input, p, g, g_inv, dg);
 
     double* result = (double*)malloc(8 * sizeof(double));
     for (int i = 0; i < 8; i++) {
@@ -108,20 +107,18 @@ double* rk4(double* state_vector) {
     free(k2);
     free(k3);
     free(k4);
+    update_g(state_vector[2], state_vector[3], g, p);
+    update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     return result;
 }
 
-double calculate_E(double* state_vector) {
-    double** g_val = make_g(state_vector[2], state_vector[3], &p);
-    double E = - g_val[0][0]*state_vector[4] - g_val[0][1]*state_vector[5];
-    free_g(g_val);
+double calculate_E(double* state_vector, Params* p, double** g) {
+    double E = - g[0][0]*state_vector[4] - g[0][1]*state_vector[5];
     return E;
 }
 
-double calculate_L_z(double* state_vector) {
-    double** g_val = make_g(state_vector[2], state_vector[3], &p);
-    double L_z = g_val[1][1]*state_vector[5] + g_val[0][1]*state_vector[4];
-    free_g(g_val);
+double calculate_L_z(double* state_vector, Params* p, double** g) {
+    double L_z = g[1][1]*state_vector[5] + g[0][1]*state_vector[4];
     return L_z;
 }
 
@@ -223,63 +220,98 @@ double std(double* arr, int n) {
     return sqrt(res/N);
 }
 
-double norm_vel(double* state_vector) {
-    double** g_val = make_g(state_vector[2], state_vector[3], &p);
-    double norm = + g_val[0][0] * state_vector[4] * state_vector[4]
-                  + g_val[1][1] * state_vector[5] * state_vector[5] 
-                  + 2*g_val[1][0] * state_vector[4] * state_vector[5] 
-                  + g_val[2][2] * state_vector[6] * state_vector[6]
-                  + g_val[3][3] * state_vector[7] * state_vector[7];
-    free_g(g_val);
+double norm_vel(double* state_vector, Params* p, double** g) {
+    double norm = + g[0][0] * state_vector[4] * state_vector[4]
+                  + g[1][1] * state_vector[5] * state_vector[5] 
+                  + 2*g[1][0] * state_vector[4] * state_vector[5] 
+                  + g[2][2] * state_vector[6] * state_vector[6]
+                  + g[3][3] * state_vector[7] * state_vector[7];
     return norm; 
 }
 
+double sgn(double x) {
+    if (x > 0) return 1;
+    if (x < 0) return -1;
+    return 0;
+}
+
+Params make_params(double M, double J, double alpha_const, double beta_const, double gamma_const) {
+    double j = J/(M*M);
+    Params p = {.M = M, .J = J, .M2 = -alpha_const*j*j*pow(M, 3), .S3 = -beta_const*pow(j, 3)*pow(M, 4), .M4 = gamma_const*pow(j, 4)*pow(M, 5)};
+    return p;
+}
+
 int main() {
+    SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
+    time_t start_time;
+    time_t cur_time;
+    time(&start_time);
+    const unsigned long N = 1e9;
+    size_t save_interval = (int)1e4;
+
+    double** g = make_g();
+    double** g_inv = make_g_inv();
+    double*** dg = make_dg();
+
     FILE *ftpr;
-    ftpr = fopen("trajectory.csv", "w");
-    const unsigned long int N = (int)1e9;
-    size_t save_interval = (int)1e3;
-    double* arr_norm = (double*)malloc(N/save_interval * sizeof(double));
-    double* arr_E = (double*)malloc(N/save_interval * sizeof(double));
-    double* arr_L_z = (double*)malloc(N/save_interval * sizeof(double));
-    double* state_vector = (double*)calloc(8, sizeof(double));
-    state_vector[2] = init_r;
-    state_vector[6] = init_ur;
-    state_vector = initialize_velocity(state_vector);
-    fprintf(ftpr, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
-    print_array(state_vector, 8, "State_vector: ");
-    for (int n = 0; n < N; n++) {
-        //double* new_state = rk45(state_vector, &h);
-        double* new_state = rk4(state_vector);
-        free(state_vector);
-        state_vector = new_state;
-        if (state_vector[2] < 0.5) {
-            return 0;
-        }
-        double modulo_f = fmod(state_vector[1], M_PI);
-        if (modulo_f < poincare_tol || M_PI - poincare_tol < modulo_f) {
-            fprintf(ftpr, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", 
-                state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
-        }
-        if (n%save_interval == 0) {
-            int index = n/save_interval;
-            arr_norm[index] = norm_vel(state_vector);
-            arr_E[index] = calculate_E(state_vector);
-            arr_L_z[index] = calculate_L_z(state_vector);
+    ftpr = fopen("trajectory.csv", "a");
 
-            double percentage = (double)n/(double)N * 100;
-            printf("Step %d/%ld (done %.2f percent):  normalization %.4f  E %.4f  L_z %.4f  std norm %.4f  std E %.4f  std L_z %.4f  h %1.4e\n", 
-                n+1, N, percentage, arr_norm[index], arr_E[index], arr_L_z[index], std(arr_norm, index), std(arr_E, index), std(arr_L_z, index), h);
+    for (double init_r = 10.5; init_r > 2.0; init_r -= 0.5) {
+        int logged = 0;
+        double sum_norm = 0;
+        double sum_E = 0;
+        double sum_L_z = 0;
 
-            fprintf(ftpr, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", 
-                state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
+        double* state_vector = (double*)calloc(8, sizeof(double));
+        state_vector[2] = init_r;
+        state_vector[6] = init_ur;
+        Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
+        state_vector = initialize_velocity(state_vector, &p, g, g_inv, dg);
+        double prev_z = state_vector[3];
+
+        fprintf(ftpr, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
+        print_array(state_vector, 8, "State_vector: ");
+
+        for (int n = 0; logged < 80; n++) {
+            //double* new_state = rk45(state_vector, &h);
+            double* new_state = rk4(state_vector, &p, g, g_inv, dg);
+            free(state_vector);
+            state_vector = new_state;
+            if (state_vector[2] < 0.5) {
+                break;
+            }
+
+            sum_norm += norm_vel(state_vector, &p, g);
+            sum_E += calculate_E(state_vector, &p, g);
+            sum_L_z += calculate_L_z(state_vector, &p, g);
+
+            if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1)) {
+                logged += 1;
+                printf("Logging...\n");
+                fprintf(ftpr, "%.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f, %.4f\n", 
+                    state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
+            }
+
+            if (n%save_interval == 0) {
+                time(&cur_time);
+
+                double norm_avg = sum_norm/(double)n;
+                double E_avg = sum_E/(double)n;
+                double L_z_avg = sum_L_z/(double)n;
+
+                double norm_dev = fabs(norm_vel(state_vector, &p, g) - norm_avg)/norm_avg * 1e12;
+                double E_dev = fabs(calculate_E(state_vector, &p, g) - E_avg)/E_avg * 1e12;
+                double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z_avg)/L_z_avg * 1e12;
+                
+                printf("Step %e | Logged %d | Time %.4f | Relative deviations (1e-12):     norm: %f    E: %f   L_z: %f \n", (double)n, logged, difftime(cur_time, start_time), norm_dev, E_dev, L_z_dev);
+            }
+            prev_z = state_vector[3];
         }
     }
 
-    free(state_vector);
-    free(arr_norm);
-    free(arr_E);
-    free(arr_L_z);
+    free_g(g);
+    free_g_inv(g_inv);
+    free_dg(dg);
     fclose(ftpr);
 
     return 0;
