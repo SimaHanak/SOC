@@ -12,11 +12,11 @@ const double E = 0.95;
 const double init_ur = 0;
 const double M = 1.0;
 const double J = 0.3;
-const double alpha_const = 3;
+const double alpha_const = 1.5;
 const double beta_const = 1;
 const double gamma_const = 1;
 
-double h = 1e-1;
+double h = 1e-6;
 #define M_PI 3.14159265358979323846
 
 static const double b[6][5] = {
@@ -54,13 +54,12 @@ double* initialize_velocity(double* state_vector, Params* p, double** g, double*
 void print_array(double *arr, int len, char* text) {
     printf("%s ", text);
     for (int i = 0; i < len; i++)
-        printf("%.5Lf, ", arr[i]);
+        printf("%f, ", arr[i]);
     printf("\n");
 }
 
 double* eq_of_motion(double* state_vector, Params* p, double** g, double** g_inv, double*** dg) {
     update_g(state_vector[2], state_vector[3], g, p);
-    update_dg(state_vector[2], state_vector[3], dg, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     double*** Christoffel = generate_Christoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg);
 
@@ -72,7 +71,6 @@ double* eq_of_motion(double* state_vector, Params* p, double** g, double** g_inv
     }
 
     for (int coords = 0; coords < 4; coords++) {
-        dydt[coords + 4] = 0;
         for (int kappa = 0; kappa < 4; kappa++) {
             for (int lambda = 0; lambda < 4; lambda++) {
                 dydt[coords + 4] -= Christoffel[coords][kappa][lambda] * vel[kappa] * vel[lambda];
@@ -243,8 +241,9 @@ int main() {
     FILE *ftpr;
     ftpr = fopen("trajectory.csv", "a");
 
-    for (double init_r = 10.5L; init_r > 3.0; init_r -= 0.5) {
+    for (double init_r = 10.5; init_r > 2.0; init_r -= 0.5) {
         int logged = 0;
+
         double* state_vector = (double*)calloc(8, sizeof(double));
         state_vector[2] = init_r;
         state_vector[6] = init_ur;
@@ -258,7 +257,7 @@ int main() {
         double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;  
         printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
 
-        fprintf(ftpr, "E%Lf, L_z%Lf, r%Lf, ur%Lf, M%Lf, J%Lf, M2%Lf, S3%Lf, M4%Lf\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
+        fprintf(ftpr, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
         print_array(state_vector, 8, "State_vector: ");
 
         for (int n = 0; logged < 1000; n++) {
@@ -273,7 +272,7 @@ int main() {
             if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1)) {
                 logged += 1;
                 //printf("Logging...\n");
-                fprintf(ftpr, "%.4Lf, %.4Lf, %.4Lf, %.4Lf, %.4Lf, %.4Lf, %.4Lf, %.4Lf\n", 
+                fprintf(ftpr, "%f, %f, %f, %f, %f, %f, %f, %f\n", 
                     state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
             }
 

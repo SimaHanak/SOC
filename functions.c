@@ -375,7 +375,6 @@ double*** generate_Christoffel_symbols(double r, double z, Params *p, double** g
     for (int mu = 0; mu < 4 ; mu++){
         for (int kappa = 0; kappa < 4 ; kappa++){
             for (int lambda = 0; lambda < 4 ; lambda++){
-                Christoffel[mu][kappa][lambda] = 0;
                 for (int sigma = 0; sigma < 4 ; sigma++){
                     Christoffel[mu][kappa][lambda] += 0.5*g_inv[mu][sigma]*(dg[lambda][sigma][kappa] + dg[kappa][lambda][sigma] - dg[sigma][kappa][lambda]);
                 }
