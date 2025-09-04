@@ -1,3 +1,7 @@
+*
+!*.*
+!*/
 reading
 .venv
 .vscode
+*.exe

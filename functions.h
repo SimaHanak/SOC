@@ -2,22 +2,22 @@
 #define FUNCTIONS_H
 
 typedef struct {
-    double M, J, M2, S3, M4;
+    long double M, J, M2, S3, M4;
 } Params;
 
-double*** generate_Christoffel_symbols(double r, double z, Params* p, double** g, double** g_inv, double*** dg);
-void free_Christoffel(double*** Christoffel);
+long double*** generate_Christoffel_symbols(long double r, long double z, Params* p, long double** g, long double** g_inv, long double*** dg);
+void free_Christoffel(long double*** Christoffel);
 
-double*** make_dg();
-void update_dg(double r, double z, double*** dg, Params* p);
-void free_dg(double*** dg);
+long double*** make_dg();
+void update_dg(long double r, long double z, long double*** dg, Params* p);
+void free_dg(long double*** dg);
 
-double** make_g();
-void update_g(double r, double z, double** g, Params* p);
-void free_g(double** g);
+long double** make_g();
+void update_g(long double r, long double z, long double** g, Params* p);
+void free_g(long double** g);
 
-double** make_g_inv();
-void update_g_inv(double r, double z, double** g_inv, Params *p);
-void free_g_inv(double** g_inv);
+long double** make_g_inv();
+void update_g_inv(long double r, long double z, long double** g_inv, Params *p);
+void free_g_inv(long double** g_inv);
 
 #endif
