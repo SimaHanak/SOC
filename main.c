@@ -6,7 +6,7 @@
 //#include <windows.h>
 #include <time.h>
 
-const double L_z = 3;
+const double L_z = 3.49;
 const double E = 0.95;
 //const double init_r = 5;
 const double init_ur = 0;
@@ -16,7 +16,7 @@ const double alpha_const = 1.5;
 const double beta_const = 1;
 const double gamma_const = 1;
 
-double h = 1e-6;
+double h = 1e-4;
 #define M_PI 3.14159265358979323846
 
 static const double b[6][5] = {
@@ -243,13 +243,14 @@ int main() {
     FILE *ftpr;
     ftpr = fopen("trajectory.csv", "a");
 
-    for (double init_r = 10.5; init_r > 2.0; init_r -= 0.5) {
+    for (double init_r = 10.0; init_r > 2.0; init_r -= 0.5) {
         int logged = 0;
 
         double* state_vector = (double*)calloc(8, sizeof(double));
         state_vector[2] = init_r;
         state_vector[6] = init_ur;
         Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
+        //Params p = {.M = 1, .J = 0.33, .M2 = 0.28, .S3 = 0.05, .M4 = 0.01};
         state_vector = initialize_velocity(state_vector, &p, g, g_inv, dg);
         double prev_z = state_vector[3];
 
@@ -285,6 +286,7 @@ int main() {
                 L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
                 
                 printf("Step %e | Logged %d | Time %.4f | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged, difftime(cur_time, start_time), norm_dev, E_dev, L_z_dev);
+                print_array(state_vector, 8, "State_vector: ");
             }
             prev_z = state_vector[3];
         }

@@ -14,8 +14,18 @@ class Params:
         self.M2 = -0.1
         self.S3 = 0.05
         self.M4 = 0.01
+        self.alpha = 1
+        self.beta = 1
+        self.gamma = 1
+    
+    def kerr_params(self):
+        j = self.J / self.M**2
+        self.alpha = self.M2 / (self.M**3 * j**2)
+        self.beta = self.S3 / (self.M**4 * j**3)
+        self.gamma = self.M4 / (self.M**5 * j**4)
 
 p = Params()
+p.kerr_params()
 
 # --- Define metric-related functions ---
 def A(r, z):
@@ -54,7 +64,8 @@ def omega(r, z):
             G(r, z)/(4*(r**2 + z**2)**(11/2)))
 
 def gamma(r, z):
-    return (r**2*(p.J**2*(r**2 - 8*z**2) + p.M*(p.M**3 + 3*p.M2)*(r**2 - 4*z**2)))/(4*(r**2 + z**2)**4) - p.M**2*r**2/(2*(r**2 + z**2)**2)
+    return ((r**2*(p.J**2*(r**2 - 8*z**2) + p.M*(p.M**3 + 3*p.M2)*(r**2 - 4*z**2)))/(4*(r**2 + z**2)**4) - 
+            p.M**2*r**2/(2*(r**2 + z**2)**2))
 
 def g_tt(r, z): return -f(r, z)
 def g_tf(r, z): return omega(r, z)*f(r, z)
@@ -100,6 +111,10 @@ app.layout = html.Div([
     ], style={'padding': 10, 'flex': 1}),
 
     html.Div([
+        html.P(f"Current Parameters in Kerr-like fashion: alpha={p.alpha}, beta={p.beta}, gamma={p.gamma}")
+    ]),
+
+    html.Div([
         dcc.Graph(id='plot-area')
     ], style={'width': '100%', 'display': 'inline-block'}),
 ])
@@ -120,6 +135,8 @@ def update_graph(E, Lz, J, M2, S3, M4):
     p.M2 = M2
     p.S3 = S3
     p.M4 = M4
+
+    p.kerr_params()
 
     Veff_line = V_eff(r, 0, E, Lz)
     Veff_surface = V_eff(r_grid, z_grid, E, Lz)

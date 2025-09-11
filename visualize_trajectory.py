@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import csv
 import numpy as np
 
-with open(r"/home/shanak/Documents/[01] Studium/SOČ/trajectory.csv", 'r') as file:
+with open(r"C:/Users/shana/Documents/[01] Studium/SOČ/trajectory.csv", 'r') as file:
+#with open(r"/home/shanak/Documents/[01] Studium/SOČ/trajectory.csv", 'r') as file:
     reader = csv.reader(file)
     data = list(reader)
     data = [list(map(float, row)) for row in data[1:-1] if len(row) == 8]
