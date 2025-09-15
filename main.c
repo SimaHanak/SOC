@@ -243,7 +243,7 @@ int main() {
     FILE *ftpr;
     ftpr = fopen("trajectory.csv", "a");
 
-    for (double init_r = 10.0; init_r > 2.0; init_r -= 0.5) {
+    for (double init_r = 8.5; init_r > 2.0; init_r -= 0.5) {
         int logged = 0;
 
         double* state_vector = (double*)calloc(8, sizeof(double));
