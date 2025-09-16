@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.ma as ma
 import dash
-from dash import dcc, html
+from dash import dcc, html, callback_context
 from dash.dependencies import Input, Output
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -18,14 +18,20 @@ class Params:
         self.beta = 1
         self.kerr_gamma = 1
     
-    def kerr_params(self):
+    def update_kerr_params(self):
         j = self.J / self.M**2
-        self.alpha = self.M2 / (self.M**3 * j**2)
-        self.beta = self.S3 / (self.M**4 * j**3)
+        self.alpha = - self.M2 / (self.M**3 * j**2)
+        self.beta = - self.S3 / (self.M**4 * j**3)
         self.kerr_gamma = self.M4 / (self.M**5 * j**4)
+    
+    def update_multipoles(self):
+        j = self.J / self.M**2
+        self.M2 = - self.alpha * j**2 * self.M**3
+        self.S3 = - self.beta * j**3 * self.M**4
+        self.M4 = self.kerr_gamma * j**4 * self.M**5
 
 p = Params()
-p.kerr_params()
+p.update_kerr_params()
 
 # --- Define metric-related functions ---
 def A(r, z):
@@ -108,31 +114,60 @@ app.layout = html.Div([
         
         html.Label('Mass Hexadecapole M4'),
         dcc.Slider(id='M4', min=-1, max=1, step=0.01, value=p.M4, marks={-1: '-1', 1: '1'}, tooltip={'always_visible': True}),
-    ], style={'padding': 10, 'flex': 1}),
 
-    html.Div([
-        html.P(id="kerr-params-display")
-    ]), 
+        html.Label('Kerr alpha'),
+        dcc.Slider(id='alpha', min=-3, max=3, step=0.01, value=p.alpha, marks={-3: '-3', 3: '3'}, tooltip={'always_visible': True}),
+
+        html.Label('Kerr beta'),
+        dcc.Slider(id='beta', min=-3, max=3, step=0.01, value=p.beta, marks={-3: '-3', 3: '3'}, tooltip={'always_visible': True}),
+
+        html.Label('Kerr gamma'),
+        dcc.Slider(id='kerr_gamma', min=-3, max=3, step=0.01, value=p.kerr_gamma, marks={-3: '-3', 3: '3'}, tooltip={'always_visible': True}),
+        
+    ], style={'padding': 10, 'flex': 1}), 
 
     html.Div([
         dcc.Graph(id='plot-area')
     ], style={'width': '100%', 'display': 'inline-block'}),
+
 ])
 
 @app.callback(
-    Output("kerr-params-display", "children"),
-    [Input("J", "value"),
+    [Output("alpha", "value"),
+     Output("beta", "value"),
+     Output("kerr_gamma", "value"),
+     Output("M2", "value"),
+     Output("S3", "value"),
+     Output("M4", "value")],
+    [Input("alpha", "value"),
+     Input("beta", "value"),
+     Input("kerr_gamma", "value"),
      Input("M2", "value"),
      Input("S3", "value"),
-     Input("M4", "value")]
+     Input("M4", "value"),
+     Input("J", "value")]
 )
-def update_params(J, M2, S3, M4):
+def sync_sliders(alpha, beta, kerr_gamma, M2, S3, M4, J):
+    triggered = callback_context.triggered[0]["prop_id"].split(".")[0]
+
+    # Always keep spin updated
     p.J = J
-    p.M2 = M2
-    p.S3 = S3
-    p.M4 = M4
-    p.kerr_params()
-    return f"Current Parameters in Kerr-like fashion: alpha={p.alpha:.3f}, beta={p.beta:.3f}, gamma={p.kerr_gamma:.3f}"
+
+    if triggered in ["M2", "S3", "M4"]:  
+        # User moved multipole sliders → update Kerr params
+        p.M2, p.S3, p.M4 = M2, S3, M4
+        p.update_kerr_params()
+        return p.alpha, p.beta, p.kerr_gamma, M2, S3, M4
+
+    elif triggered in ["alpha", "beta", "kerr_gamma"]:  
+        # User moved Kerr sliders → update multipoles
+        p.alpha, p.beta, p.kerr_gamma = alpha, beta, kerr_gamma
+        p.update_multipoles()
+        return alpha, beta, kerr_gamma, p.M2, p.S3, p.M4
+
+    else:
+        # Fallback: just return current values
+        return p.alpha, p.beta, p.kerr_gamma, p.M2, p.S3, p.M4
 
 # --- Callback ---
 @app.callback(

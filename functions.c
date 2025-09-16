@@ -36,7 +36,7 @@ double B(double r, double z, Params *p) {
 }
 
 double dB_r(double r, double z, Params *p) {
-    double term1 = 4*powl(r, 3)*(10*(*p).J*(*p).J*(*p).M*(*p).M* + 10*(*p).M2*powl((*p).M, 3) + 21*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    double term1 = 4*powl(r, 3)*(10*(*p).J*(*p).J*(*p).M*(*p).M + 10*(*p).M2*powl((*p).M, 3) + 21*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     double term2 = 0;
     double term3 = - 8*r*z*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     return term1 + term2 + term3;

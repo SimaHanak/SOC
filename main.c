@@ -6,17 +6,17 @@
 //#include <windows.h>
 #include <time.h>
 
-const double L_z = 3.49;
+const double L_z = 3.23;
 const double E = 0.95;
 //const double init_r = 5;
 const double init_ur = 0;
 const double M = 1.0;
 const double J = 0.3;
-const double alpha_const = 1.5;
-const double beta_const = 1;
-const double gamma_const = 1;
+const double alpha_const = 1.0;
+const double beta_const = 1.0;
+const double gamma_const = 1.0;
 
-double h = 1e-4;
+double h = 1e-1;
 #define M_PI 3.14159265358979323846
 
 static const double b[6][5] = {
@@ -243,7 +243,7 @@ int main() {
     FILE *ftpr;
     ftpr = fopen("trajectory.csv", "a");
 
-    for (double init_r = 8.5; init_r > 2.0; init_r -= 0.5) {
+    for (double init_r = 11; init_r > 5; init_r -= 0.5) {
         int logged = 0;
 
         double* state_vector = (double*)calloc(8, sizeof(double));
@@ -254,7 +254,7 @@ int main() {
         state_vector = initialize_velocity(state_vector, &p, g, g_inv, dg);
         double prev_z = state_vector[3];
 
-        double norm_dev = -fabs(norm_vel(state_vector, &p, g) + 1)/1;
+        double norm_dev = fabs(norm_vel(state_vector, &p, g) + 1)/1;
         double E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
         double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;   
         printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
@@ -281,6 +281,8 @@ int main() {
             if (n%save_interval == 0) {
                 time(&cur_time);
 
+                update_g(state_vector[2], state_vector[3], g, &p);
+                update_g_inv(state_vector[2], state_vector[3], g_inv, &p);
                 norm_dev = - fabs(norm_vel(state_vector, &p, g) + 1)/1;
                 E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
                 L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
