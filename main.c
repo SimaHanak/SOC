@@ -3,16 +3,17 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <direct.h>
 //#include <windows.h>
 #include <time.h>
 
-const double L_z = 3.23;
+const double L_z = 3.2;
 const double E = 0.95;
 //const double init_r = 5;
 const double init_ur = 0;
 const double M = 1.0;
 const double J = 0.3;
-const double alpha_const = 1.0;
+const double alpha_const = -3;
 const double beta_const = 1.0;
 const double gamma_const = 1.0;
 
@@ -228,22 +229,63 @@ Params make_params(double M, double J, double alpha_const, double beta_const, do
     return p;
 }
 
+char *working_dir(char *folder_name, size_t size){
+    time_t start_time;
+    time(&start_time);
+
+    printf("Do you want to make new folder for this iteration? Y/N: ");
+    char new_folder;
+    scanf(" %c", &new_folder);
+
+    if (new_folder == 'Y') {
+        strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
+
+        printf("Creating new folder %s for this iteration...\n", folder_name);
+        _mkdir(folder_name);
+
+        strcat(folder_name, "/");
+    } else {
+        printf("Continuing in the same folder...\n");
+        strcpy(folder_name, "./");
+    };
+
+    return folder_name;
+}
+
 int main() {
     //SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
     time_t start_time;
     time_t cur_time;
     time(&start_time);
-    const unsigned long N = 1e9;
     size_t save_interval = (int)1e4;
 
     double** g = make_g();
     double** g_inv = make_g_inv();
     double*** dg = make_dg();
 
-    FILE *ftpr;
-    ftpr = fopen("trajectory.csv", "a");
+    char folder_name[512];
+    working_dir(folder_name, sizeof(folder_name));
 
-    for (double init_r = 11; init_r > 5; init_r -= 0.5) {
+    char filepath[300];
+    snprintf(filepath, sizeof(filepath), "%strajectory.csv", folder_name);
+
+    FILE *ftprtra = fopen(filepath, "a");
+    if (ftprtra == NULL) {
+        perror("Error opening file");
+        exit(1);
+    }
+
+    snprintf(filepath, sizeof(filepath), "%srotation_numbers.csv", folder_name);
+
+    FILE *ftprrot = fopen(filepath, "a");
+    if (ftprrot == NULL) {
+        perror("Error opening file");
+        exit(1);
+    }
+
+    int len_poincare_iteration = 1000;
+
+    for (double init_r = 5; init_r > 4; init_r -= 5) {
         int logged = 0;
 
         double* state_vector = (double*)calloc(8, sizeof(double));
@@ -253,29 +295,46 @@ int main() {
         //Params p = {.M = 1, .J = 0.33, .M2 = 0.28, .S3 = 0.05, .M4 = 0.01};
         state_vector = initialize_velocity(state_vector, &p, g, g_inv, dg);
         double prev_z = state_vector[3];
+        double prev_log_r = state_vector[2];
+        double prev_log_ur = state_vector[6];
 
         double norm_dev = fabs(norm_vel(state_vector, &p, g) + 1)/1;
         double E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
         double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;   
         printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
 
-        fprintf(ftpr, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
+        double rotation_number = 0;
+
+        fprintf(ftprrot, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
+        fprintf(ftprtra, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
         print_array(state_vector, 8, "State_vector: ");
 
-        for (int n = 0; logged < 1000; n++) {
+        for (int n = 0; logged < len_poincare_iteration; n++) {
             //double* new_state = rk45(state_vector, &h);
             double* new_state = rk4(state_vector, &p, g, g_inv, dg);
             free(state_vector);
             state_vector = new_state;
-            if (state_vector[2] < 0.5) {
+            if (state_vector[2] < 1.0 || isnan(state_vector[2])) {
                 break;
             }
 
-            if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1)) {
-                logged += 1;
-                //printf("Logging...\n");
-                fprintf(ftpr, "%f, %f, %f, %f, %f, %f, %f, %f\n", 
+            if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
+
+                double theta = atan2l(state_vector[6], state_vector[2]) - atan2l(prev_log_ur, prev_log_r);
+
+                if (theta > 2*M_PI)  theta -= 2*M_PI;
+                if (theta < 0) theta += 2*M_PI;
+
+                rotation_number += theta;
+
+                printf("%.4f ", theta);
+
+                fprintf(ftprtra, "%f, %f, %f, %f, %f, %f, %f, %f\n", 
                     state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
+                
+                prev_log_r = state_vector[2];
+                prev_log_ur = state_vector[6];
+                logged += 1;
             }
 
             if (n%save_interval == 0) {
@@ -290,14 +349,19 @@ int main() {
                 printf("Step %e | Logged %d | Time %.4f | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged, difftime(cur_time, start_time), norm_dev, E_dev, L_z_dev);
                 print_array(state_vector, 8, "State_vector: ");
             }
+
             prev_z = state_vector[3];
         }
+
+        rotation_number = rotation_number/(len_poincare_iteration*2*M_PI);
+        fprintf(ftprrot, "%f\n", rotation_number);
     }
 
     free_g(g);
     free_g_inv(g_inv);
     free_dg(dg);
-    fclose(ftpr);
+    fclose(ftprtra);
+    fclose(ftprrot);
 
     return 0;
 } 
