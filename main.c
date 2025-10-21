@@ -7,17 +7,17 @@
 //#include <windows.h>
 #include <time.h>
 
-const double L_z = 3.2;
+const double L_z = 3.0;
 const double E = 0.95;
 //const double init_r = 5;
 const double init_ur = 0;
 const double M = 1.0;
 const double J = 0.3;
-const double alpha_const = -3;
-const double beta_const = 1.0;
-const double gamma_const = 1.0;
+const double alpha_const = 0.0;
+const double beta_const = 0.2;
+const double gamma_const = 3.0;
 
-double h = 1e-1;
+double h = 1e-2;
 #define M_PI 3.14159265358979323846
 
 static const double b[6][5] = {
@@ -264,28 +264,27 @@ int main() {
     double*** dg = make_dg();
 
     char folder_name[512];
-    working_dir(folder_name, sizeof(folder_name));
+    // working_dir(folder_name, sizeof(folder_name));
 
     char filepath[300];
-    snprintf(filepath, sizeof(filepath), "%strajectory.csv", folder_name);
+    // snprintf(filepath, sizeof(filepath), "%strajectory.csv", folder_name);
 
-    FILE *ftprtra = fopen(filepath, "a");
+    strftime(folder_name, sizeof(folder_name), "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
+    snprintf(filepath, sizeof(filepath), "%s.csv", folder_name);
+
+    FILE *ftprtra = fopen(folder_name, "a");
     if (ftprtra == NULL) {
         perror("Error opening file");
         exit(1);
     }
 
-    snprintf(filepath, sizeof(filepath), "%srotation_numbers.csv", folder_name);
+    int len_poincare_iteration = 5000;
+    double r_start = 2.71;
+    double r_end = 2.66;
+    double r_step = 1e-3;
+    double computation_count = (r_start - r_end)/r_step*len_poincare_iteration;
 
-    FILE *ftprrot = fopen(filepath, "a");
-    if (ftprrot == NULL) {
-        perror("Error opening file");
-        exit(1);
-    }
-
-    int len_poincare_iteration = 1000;
-
-    for (double init_r = 5; init_r > 4; init_r -= 5) {
+    for (double init_r = r_start; init_r > r_end; init_r -= r_step) {
         int logged = 0;
 
         double* state_vector = (double*)calloc(8, sizeof(double));
@@ -297,15 +296,14 @@ int main() {
         double prev_z = state_vector[3];
         double prev_log_r = state_vector[2];
         double prev_log_ur = state_vector[6];
+        double sum_r = 0;
+        double num_r = 0;
 
         double norm_dev = fabs(norm_vel(state_vector, &p, g) + 1)/1;
         double E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
-        double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;   
+        double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;  
         printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
 
-        double rotation_number = 0;
-
-        fprintf(ftprrot, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
         fprintf(ftprtra, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
         print_array(state_vector, 8, "State_vector: ");
 
@@ -319,16 +317,6 @@ int main() {
             }
 
             if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
-
-                double theta = atan2l(state_vector[6], state_vector[2]) - atan2l(prev_log_ur, prev_log_r);
-
-                if (theta > 2*M_PI)  theta -= 2*M_PI;
-                if (theta < 0) theta += 2*M_PI;
-
-                rotation_number += theta;
-
-                printf("%.4f ", theta);
-
                 fprintf(ftprtra, "%f, %f, %f, %f, %f, %f, %f, %f\n", 
                     state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
                 
@@ -345,23 +333,22 @@ int main() {
                 norm_dev = - fabs(norm_vel(state_vector, &p, g) + 1)/1;
                 E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
                 L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
+                double diff_time = difftime(cur_time, start_time);
+                double time_per_step = diff_time/(double)n;
+                double predicted_time = time_per_step*computation_count - diff_time;
+                predicted_time /= 3600;
                 
-                printf("Step %e | Logged %d | Time %.4f | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged, difftime(cur_time, start_time), norm_dev, E_dev, L_z_dev);
+                printf("Step %e | Logged %d | Time %.4f | Ends in %.4f hours | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
                 print_array(state_vector, 8, "State_vector: ");
             }
 
             prev_z = state_vector[3];
         }
-
-        rotation_number = rotation_number/(len_poincare_iteration*2*M_PI);
-        fprintf(ftprrot, "%f\n", rotation_number);
     }
-
     free_g(g);
     free_g_inv(g_inv);
     free_dg(dg);
     fclose(ftprtra);
-    fclose(ftprrot);
 
     return 0;
 } 
