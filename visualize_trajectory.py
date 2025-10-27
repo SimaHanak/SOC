@@ -4,14 +4,20 @@ import numpy as np
 import os
 from matplotlib.animation import FuncAnimation
 
-list_dir = os.listdir("C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC")
+# list_dir = os.listdir("C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC")
+list_dir = os.listdir("/home/shanak/Documents/[01] Studium/SOČ/")
 for i, dir in enumerate(list_dir):
     print(f"{i}: {dir}")
 
 folder_number = int(input("Which folder you want to use? "))
 
-with open(f"C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC\\{list_dir[folder_number]}\\trajectory.csv", 'r') as tra_file:
-#with open(r"/home/shanak/Documents/[01] Studium/SOČ/trajectory.csv", 'r') as file:
+if list_dir[folder_number].endswith(".csv"):
+    file_path = f"/home/shanak/Documents/[01] Studium/SOČ/{list_dir[folder_number]}"
+else:
+    file_path = f"/home/shanak/Documents/[01] Studium/SOČ/{list_dir[folder_number]}/trajectory.csv"
+
+#with open(f"C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC\\{list_dir[folder_number]}\\trajectory.csv", 'r') as tra_file:
+with open(file_path, 'r') as tra_file:
     reader = csv.reader(tra_file)
     data_raw = list(reader)
     data_raw.append([])
@@ -30,6 +36,7 @@ with open(f"C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC\\{list_dir[f
         if len(row) == 9:
             header_r.append(float(row[2][2:]))
     data = np.array(data)
+
 
 # with open(f"C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC\\{list_dir[folder_number]}\\rotation_numbers.csv", 'r') as rot_file:
 #     reader = csv.reader(rot_file)
@@ -80,6 +87,8 @@ ax2.set_title('Poincare map')
 # ax3.set_ylabel('ur')
 # ax3.set_title('Rotation numbers, python computed')  
 
+if len(header_r) > len(rotation_numbers):
+    header_r = header_r[:len(rotation_numbers)]
 ax1.scatter(header_r, rotation_numbers, s=4, marker='o')
 
 ax2.scatter(data[:, 2], data[:, 6], s=0.1, cmap='viridis', marker='o') # c=poincare_map[:, 0]

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-#include <direct.h>
+//#include <direct.h>
 //#include <windows.h>
 #include <time.h>
 
@@ -230,26 +230,26 @@ Params make_params(double M, double J, double alpha_const, double beta_const, do
 }
 
 char *working_dir(char *folder_name, size_t size){
-    time_t start_time;
-    time(&start_time);
+//     time_t start_time;
+//     time(&start_time);
 
-    printf("Do you want to make new folder for this iteration? Y/N: ");
-    char new_folder;
-    scanf(" %c", &new_folder);
+//     printf("Do you want to make new folder for this iteration? Y/N: ");
+//     char new_folder;
+//     scanf(" %c", &new_folder);
 
-    if (new_folder == 'Y') {
-        strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
+//     if (new_folder == 'Y') {
+//         strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
 
-        printf("Creating new folder %s for this iteration...\n", folder_name);
-        _mkdir(folder_name);
+//         printf("Creating new folder %s for this iteration...\n", folder_name);
+//         _mkdir(folder_name);
 
-        strcat(folder_name, "/");
-    } else {
-        printf("Continuing in the same folder...\n");
-        strcpy(folder_name, "./");
-    };
+//         strcat(folder_name, "/");
+//     } else {
+//         printf("Continuing in the same folder...\n");
+//         strcpy(folder_name, "./");
+//     };
 
-    return folder_name;
+//     return folder_name;
 }
 
 int main() {
@@ -266,26 +266,27 @@ int main() {
     char folder_name[512];
     // working_dir(folder_name, sizeof(folder_name));
 
-    char filepath[300];
+    char filepath[512];
     // snprintf(filepath, sizeof(filepath), "%strajectory.csv", folder_name);
 
     strftime(folder_name, sizeof(folder_name), "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
     snprintf(filepath, sizeof(filepath), "%s.csv", folder_name);
 
-    FILE *ftprtra = fopen(folder_name, "a");
+    FILE *ftprtra = fopen(filepath, "a");
     if (ftprtra == NULL) {
         perror("Error opening file");
         exit(1);
     }
 
-    int len_poincare_iteration = 5000;
+    int len_poincare_iteration = 2000;
     double r_start = 2.71;
-    double r_end = 2.66;
-    double r_step = 1e-3;
+    double r_end = 2.7;
+    double r_step = 1.0;
     double computation_count = (r_start - r_end)/r_step*len_poincare_iteration;
+    int logged_all = 0;
 
     for (double init_r = r_start; init_r > r_end; init_r -= r_step) {
-        int logged = 0;
+        int logged_partial = 0;
 
         double* state_vector = (double*)calloc(8, sizeof(double));
         state_vector[2] = init_r;
@@ -294,6 +295,8 @@ int main() {
         //Params p = {.M = 1, .J = 0.33, .M2 = 0.28, .S3 = 0.05, .M4 = 0.01};
         state_vector = initialize_velocity(state_vector, &p, g, g_inv, dg);
         double prev_z = state_vector[3];
+        double prev_r = state_vector[2];
+        double prev_ur = state_vector[6];
         double prev_log_r = state_vector[2];
         double prev_log_ur = state_vector[6];
         double sum_r = 0;
@@ -307,7 +310,7 @@ int main() {
         fprintf(ftprtra, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
         print_array(state_vector, 8, "State_vector: ");
 
-        for (int n = 0; logged < len_poincare_iteration; n++) {
+        for (int n = 0; logged_partial < len_poincare_iteration; n++) {
             //double* new_state = rk45(state_vector, &h);
             double* new_state = rk4(state_vector, &p, g, g_inv, dg);
             free(state_vector);
@@ -317,12 +320,14 @@ int main() {
             }
 
             if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
-                fprintf(ftprtra, "%f, %f, %f, %f, %f, %f, %f, %f\n", 
-                    state_vector[0], state_vector[1], state_vector[2], state_vector[3], state_vector[4], state_vector[5], state_vector[6], state_vector[7]);
+                double r0 = (state_vector[3]*prev_r - prev_z*state_vector[2])/(state_vector[3] - prev_z);
+                double ur0 = (state_vector[3]*prev_ur - prev_z*state_vector[6])/(state_vector[3] - prev_z);
+                fprintf(ftprtra, "%f, %f\n", r0, ur0);
                 
                 prev_log_r = state_vector[2];
                 prev_log_ur = state_vector[6];
-                logged += 1;
+                logged_partial += 1;
+                logged_all += 1;
             }
 
             if (n%save_interval == 0) {
@@ -334,15 +339,17 @@ int main() {
                 E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
                 L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
                 double diff_time = difftime(cur_time, start_time);
-                double time_per_step = diff_time/(double)n;
+                double time_per_step = diff_time/(double)logged_all;
                 double predicted_time = time_per_step*computation_count - diff_time;
                 predicted_time /= 3600;
                 
-                printf("Step %e | Logged %d | Time %.4f | Ends in %.4f hours | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
+                printf("Step %e | Logged %d | Time %.4f | Ends in %.4f hours | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged_partial, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
                 print_array(state_vector, 8, "State_vector: ");
             }
 
             prev_z = state_vector[3];
+            prev_r = state_vector[2];
+            prev_ur = state_vector[6];
         }
     }
     free_g(g);
