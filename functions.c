@@ -294,16 +294,21 @@ void free_g(double** g) {
     free(g);
 }
 
-double** make_g_inv() {
-    double** g_inv = malloc(4 * sizeof(double*));
-    for (int i = 0; i < 4; i++) {
-        g_inv[i] = calloc(4, sizeof(double));
-    }
+// double** make_g_inv() {
+//     double** g_inv = malloc(4 * sizeof(double*));
+//     for (int i = 0; i < 4; i++) {
+//         g_inv[i] = calloc(4, sizeof(double));
+//     }
 
+//     return g_inv;
+// }
+
+double (*make_g_inv(void))[4] {
+    static double g_inv[4][4] = {0};
     return g_inv;
 }
 
-void update_g_inv(double r, double z, double** g_inv, Params *p) {
+void update_g_inv(double r, double z, double g_inv[4][4], Params *p) {
     double Det_val = Det(r, z, p);
 
     g_inv[0][0] = g_ff(r, z, p)/Det_val;
@@ -317,10 +322,10 @@ void update_g_inv(double r, double z, double** g_inv, Params *p) {
     g_inv[3][3] = 1/g_rr(r, z, p);
 }
 
-void free_g_inv(double** g_inv) {
-    for (int i = 0; i < 4; i++) {
-        free(g_inv[i]);
-    }
+void free_g_inv(double g_inv[4][4]) {
+    //for (int i = 0; i < 4; i++) {
+    //    free(g_inv[i]);
+    //}
     free(g_inv);
 }
 
@@ -362,7 +367,7 @@ void free_dg(double*** dg) {
     free(dg);
 }
 
-double*** generate_Christoffel_symbols(double r, double z, Params *p, double** g, double** g_inv, double*** dg) {
+double*** generate_Christoffel_symbols(double r, double z, Params *p, double** g, double g_inv[4][4], double*** dg) {
 
     double*** Christoffel = malloc(4 * sizeof(double**));
     for (int i = 0; i < 4; ++i) {

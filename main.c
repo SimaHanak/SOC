@@ -38,7 +38,7 @@ static const double c[6][2] = {
     { 512.0/1771.0,   1.0/4.0 }
 };
 
-double* initialize_velocity(double* state_vector, Params* p, double** g, double** g_inv, double*** dg) {
+double* initialize_velocity(double* state_vector, Params* p, double** g, double g_inv[4][4], double*** dg) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     state_vector[4] = - g_inv[0][0]*E + g_inv[1][0]*L_z;
@@ -59,7 +59,7 @@ void print_array(double *arr, int len, char* text) {
     printf("\n");
 }
 
-double* eq_of_motion(double* state_vector, Params* p, double** g, double** g_inv, double*** dg) {
+double* eq_of_motion(double* state_vector, Params* p, double** g, double g_inv[4][4], double*** dg) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     update_dg(state_vector[2], state_vector[3], dg, p);
@@ -84,7 +84,7 @@ double* eq_of_motion(double* state_vector, Params* p, double** g, double** g_inv
     return dydt;
 }
 
-double* rk4(double* state_vector, Params* p, double** g, double** g_inv, double*** dg) {
+double* rk4(double* state_vector, Params* p, double** g, double g_inv[4][4], double*** dg) {
     double input[8];
     
     double* k1 = eq_of_motion(state_vector, p, g, g_inv, dg);
@@ -260,7 +260,8 @@ int main() {
     size_t save_interval = (int)1e4;
 
     double** g = make_g();
-    double** g_inv = make_g_inv();
+    //double** g_inv = make_g_inv();
+    double (*g_inv)[4] = make_g_inv();
     double*** dg = make_dg();
 
     char folder_name[512];

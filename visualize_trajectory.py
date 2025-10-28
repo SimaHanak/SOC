@@ -65,7 +65,7 @@ for j in range(len(lengths)):
     for i in range(1, lengths[j]):
         angle += compute_theta(tmp_values[i-1,2], tmp_values[i-1,6], tmp_values[i,2], tmp_values[i,6], center)
     if lengths[j] != 0:
-        rotation_numbers.append(angle / (2 * np.pi * lengths[j]))
+        rotation_numbers.append(angle / (2 * np.pi * (lengths[j]-1)))
 
 print("Number of rotation numbers computed:", len(rotation_numbers))
 
@@ -91,6 +91,8 @@ if len(header_r) > len(rotation_numbers):
     header_r = header_r[:len(rotation_numbers)]
 ax1.scatter(header_r, rotation_numbers, s=4, marker='o')
 
+for i, rnum in enumerate(rotation_numbers):
+    print(i, rnum)
 ax2.scatter(data[:, 2], data[:, 6], s=0.1, cmap='viridis', marker='o') # c=poincare_map[:, 0]
 
 # ax3.scatter(rotation_numbers_header, rotation_numbers, s=4, marker='o')
