@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 #include "functions.h"
 
 double pythagorean(double r, double z, Params *p) {
@@ -267,15 +268,7 @@ double dg_rr_z(double r, double z, Params *p) {
 
 double Det(double r, double z, Params *p) {return g_tt(r, z, p)*g_ff(r, z, p) - powl(g_tf(r, z, p), 2); }
 
-double** make_g(){
-    double** g = malloc(4 * sizeof(double*));
-    for (int i = 0; i < 4; i++) {
-        g[i] = calloc(4, sizeof(double));
-    }
-    return g;
-}
-
-void update_g(double r, double z, double** g, Params *p) {
+void update_g(double r, double z, double g[4][4], Params *p) {
     g[0][0] = g_tt(r, z, p);
     g[0][1] = g_tf(r, z, p);
 
@@ -285,27 +278,6 @@ void update_g(double r, double z, double** g, Params *p) {
     g[2][2] = g_rr(r, z, p);
 
     g[3][3] = g_rr(r, z, p);
-}
-
-void free_g(double** g) {
-    for (int i = 0; i < 4; i++) {
-        free(g[i]);
-    }
-    free(g);
-}
-
-// double** make_g_inv() {
-//     double** g_inv = malloc(4 * sizeof(double*));
-//     for (int i = 0; i < 4; i++) {
-//         g_inv[i] = calloc(4, sizeof(double));
-//     }
-
-//     return g_inv;
-// }
-
-double (*make_g_inv(void))[4] {
-    static double g_inv[4][4] = {0};
-    return g_inv;
 }
 
 void update_g_inv(double r, double z, double g_inv[4][4], Params *p) {
@@ -322,26 +294,7 @@ void update_g_inv(double r, double z, double g_inv[4][4], Params *p) {
     g_inv[3][3] = 1/g_rr(r, z, p);
 }
 
-void free_g_inv(double g_inv[4][4]) {
-    //for (int i = 0; i < 4; i++) {
-    //    free(g_inv[i]);
-    //}
-    free(g_inv);
-}
-
-double*** make_dg() {
-    double*** dg = malloc(4 * sizeof(double**));
-    for (int i = 0; i < 4; ++i) {
-        dg[i] = malloc(4 * sizeof(double*));
-        for (int j = 0; j < 4; ++j) {
-            dg[i][j] = calloc(4, sizeof(double));
-        }
-    }
-
-    return dg;
-}
-
-void update_dg(double r, double z, double*** dg, Params *p) {
+void update_dg(double r, double z, double dg[4][4][4], Params *p) {
     dg[2][0][0] = dg_tt_r(r, z, p);
     dg[2][0][1] = dg_tf_r(r, z, p);
     dg[2][1][0] = dg_tf_r(r, z, p);
@@ -357,25 +310,8 @@ void update_dg(double r, double z, double*** dg, Params *p) {
     dg[3][3][3] = dg_rr_z(r, z, p);
 }
 
-void free_dg(double*** dg) {
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            free(dg[i][j]);
-        }
-        free(dg[i]);
-    }
-    free(dg);
-}
-
-double*** generate_Christoffel_symbols(double r, double z, Params *p, double** g, double g_inv[4][4], double*** dg) {
-
-    double*** Christoffel = malloc(4 * sizeof(double**));
-    for (int i = 0; i < 4; ++i) {
-        Christoffel[i] = malloc(4 * sizeof(double*));
-        for (int j = 0; j < 4; ++j) {
-            Christoffel[i][j] = calloc(4, sizeof(double));
-        }
-    }
+void update_Christoffel_symbols(double r, double z, Params *p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double Christoffel[4][4][4]) {
+    memset(Christoffel, 0, 4*4*4*sizeof(double));
 
     for (int mu = 0; mu < 4 ; mu++){
         for (int kappa = 0; kappa < 4 ; kappa++){
@@ -386,17 +322,6 @@ double*** generate_Christoffel_symbols(double r, double z, Params *p, double** g
             }
         }
     }
-    return Christoffel;
-}
-
-void free_Christoffel(double*** Christoffel) {
-    for (int i = 0; i < 4; ++i) {
-        for (int j = 0; j < 4; ++j) {
-            free(Christoffel[i][j]);
-        }
-        free(Christoffel[i]);
-    }
-    free(Christoffel);
 }
 
 /* 

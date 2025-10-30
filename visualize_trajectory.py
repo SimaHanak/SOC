@@ -1,49 +1,33 @@
 import matplotlib.pyplot as plt
-import csv
+import pandas as pd
 import numpy as np
 import os
-from matplotlib.animation import FuncAnimation
+from bokeh.plotting import figure, show
+from bokeh.layouts import row
 
-# list_dir = os.listdir("C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC")
-list_dir = os.listdir("/home/shanak/Documents/[01] Studium/SOČ/")
-for i, dir in enumerate(list_dir):
-    print(f"{i}: {dir}")
+def load_data():
+    list_dir = os.listdir("C:\\Users\\simon\\Documents\\01School\\02SOC\\SOC")
+    #list_dir = os.listdir("/home/shanak/Documents/[01] Studium/SOČ/")
+    for i, dir in enumerate(list_dir):
+        print(f"{i}: {dir}")
 
-folder_number = int(input("Which folder you want to use? "))
+    folder_number = int(input("Which folder/file you want to use? "))
 
-if list_dir[folder_number].endswith(".csv"):
-    file_path = f"/home/shanak/Documents/[01] Studium/SOČ/{list_dir[folder_number]}"
-else:
-    file_path = f"/home/shanak/Documents/[01] Studium/SOČ/{list_dir[folder_number]}/trajectory.csv"
+    if list_dir[folder_number].endswith(".csv"):
+        # file_path = f"/home/shanak/Documents/[01] Studium/SOČ/{list_dir[folder_number]}"
+        file_path = f"C:\\Users\\simon\\Documents\\01School\\02SOC\\SOC\\{list_dir[folder_number]}"
+        df = pd.read_csv(file_path, comment="#")
+        return df
+    else:
+        # file_path = f"/home/shanak/Documents/[01] Studium/SOČ/{list_dir[folder_number]}/trajectory.csv"
+        file_path = f"C:\\Users\\simon\\Documents\\01School\\02SOC\\SOC\\{list_dir[folder_number]}"
+        file_names = os.listdir(file_path)
+        df = pd.read_csv(f"{file_path}\\{file_names[1]}", comment="#", sep=r'\s*,\s*', engine='python')
+        for name in file_names[2:]:
+            df = pd.concat([df, pd.read_csv(f"{file_path}\\{name}", comment="#", sep=r'\s*,\s*', engine='python').iloc[1:]], ignore_index=True)
+        return df
 
-#with open(f"C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC\\{list_dir[folder_number]}\\trajectory.csv", 'r') as tra_file:
-with open(file_path, 'r') as tra_file:
-    reader = csv.reader(tra_file)
-    data_raw = list(reader)
-    data_raw.append([])
-    data = []
-    length = 0
-    lengths = []
-    header_r = []
-    for row in data_raw[1:]:
-        if len(row) == 8:
-            data.append(list(map(float, row)))
-            length += 1
-        else:
-            lengths.append(length)
-            length = 0
-    for row in data_raw:
-        if len(row) == 9:
-            header_r.append(float(row[2][2:]))
-    data = np.array(data)
-
-
-# with open(f"C:\\Users\\simon\\Documents\\[01] School\\[02] SOC\\SOC\\{list_dir[folder_number]}\\rotation_numbers.csv", 'r') as rot_file:
-#     reader = csv.reader(rot_file)
-#     rotation_numbers_raw = list(reader)
-#     rotation_numbers_header = [float(head[2][2:]) for head in rotation_numbers_raw[::2]]
-#     rotation_numbers_data = [float(num[0]) for num in rotation_numbers_raw[1::2]]
-#     print({rotation_numbers_header[i]: rotation_numbers_data[i] for i in range(len(rotation_numbers_header))})
+df = load_data()
 
 def compute_theta(r0, ur0, r, ur, rc):
     angle = np.arctan2(ur, r - rc) - np.arctan2(ur0, r0 - rc)
@@ -54,22 +38,22 @@ def compute_center(r_values):
     r_max = np.max(r_values)
     return (r_min + r_max) / 2
 
-center = compute_center(data[:lengths[0],2])
+center = compute_center(df.loc[df["init_r"] == df["init_r"].max(), "r"])
 rotation_numbers = []
 print("Center r =", center)
-for j in range(len(lengths)):
-    start_index = sum(lengths[:j])
-    end_index = start_index + lengths[j]
-    tmp_values = data[start_index:end_index]
+for init_r in df["init_r"].unique():
+    tmp_values = df.loc[df["init_r"] == init_r, ["r", "ur"]].to_numpy()
     angle = 0
-    for i in range(1, lengths[j]):
-        angle += compute_theta(tmp_values[i-1,2], tmp_values[i-1,6], tmp_values[i,2], tmp_values[i,6], center)
-    if lengths[j] != 0:
-        rotation_numbers.append(angle / (2 * np.pi * (lengths[j]-1)))
+    for i in range(1, len(tmp_values)):
+        angle += compute_theta(tmp_values[i-1,0], tmp_values[i-1,1], tmp_values[i,0], tmp_values[i,1], center)
+    if len(tmp_values) > 1:
+        rotation_numbers.append(angle / (2 * np.pi * (len(tmp_values)-1)))
+    else:
+        rotation_numbers.append(0)
 
 print("Number of rotation numbers computed:", len(rotation_numbers))
 
-print("Plotting", len(data), "points")
+print("Plotting", len(df), "points")
 
 fig = plt.figure(figsize=(10, 6))
 ax1 = fig.add_subplot(121)
@@ -87,18 +71,29 @@ ax2.set_title('Poincare map')
 # ax3.set_ylabel('ur')
 # ax3.set_title('Rotation numbers, python computed')  
 
-if len(header_r) > len(rotation_numbers):
-    header_r = header_r[:len(rotation_numbers)]
-ax1.scatter(header_r, rotation_numbers, s=4, marker='o')
+ax1.scatter(df['init_r'].unique(), rotation_numbers, s=4, marker='o')
 
-for i, rnum in enumerate(rotation_numbers):
-    print(i, rnum)
-ax2.scatter(data[:, 2], data[:, 6], s=0.1, cmap='viridis', marker='o') # c=poincare_map[:, 0]
+#for i, rnum in zip(df['init_r'].unique(), rotation_numbers):
+#    print(i, rnum)
+ax2.scatter(df.loc[:, "r"], df.loc[:, "ur"], s=0.1, cmap='viridis', marker='o') # c=poincare_map[:, 0]
 
 # ax3.scatter(rotation_numbers_header, rotation_numbers, s=4, marker='o')
 # plt.colorbar(ax1.collections[0], label='t')
 plt.show()
 
+
+# First plot: Rotation number vs r
+p1 = figure(width=450, height=400, title="", x_axis_label='r', y_axis_label='Rotation number')
+p1.xaxis.major_label_orientation = 45  # rotate x-axis labels
+
+# Second plot: ur vs r (Poincaré map)
+p2 = figure(width=450, height=400, title="Poincaré map", x_axis_label='r', y_axis_label='ur')
+
+# Arrange the two plots side by side
+layout = row(p1, p2)
+
+# Display
+show(layout)
 
 # fig, ax = plt.subplots()
 # scat = ax.scatter([], [], s=1, cmap='viridis', marker='o')

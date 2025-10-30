@@ -3,9 +3,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
-//#include <direct.h>
-//#include <windows.h>
+#include <omp.h>
 #include <time.h>
+#include <direct.h>
 
 const double L_z = 3.0;
 const double E = 0.95;
@@ -20,25 +20,7 @@ const double gamma_const = 3.0;
 double h = 1e-2;
 #define M_PI 3.14159265358979323846
 
-static const double b[6][5] = {
-    { 0.0,       0.0,        0.0,        0.0,       0.0 },
-    { 1.0/5.0,   0.0,        0.0,        0.0,       0.0 },
-    { 3.0/40.0,  9.0/40.0,   0.0,        0.0,       0.0 },
-    { 3.0/10.0, -9.0/10.0,   6.0/5.0,    0.0,       0.0 },
-    {-11.0/54.0, 5.0/2.0,   -70.0/27.0,  35.0/27.0, 0.0 },
-    {1631.0/55296.0, 175.0/512.0, 575.0/13824.0, 44275.0/110592.0, 253.0/4096.0}
-};
-
-static const double c[6][2] = {
-    { 37.0/378.0,     2825.0/27648.0 },
-    { 0.0,            0.0 },
-    { 250.0/621.0,    18575.0/48384.0 },
-    { 125.0/594.0,    13525.0/55296.0 },
-    { 0.0,            277.0/14336.0 },
-    { 512.0/1771.0,   1.0/4.0 }
-};
-
-double* initialize_velocity(double* state_vector, Params* p, double** g, double g_inv[4][4], double*** dg) {
+void initialize_velocity(double state_vector[8], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4]) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     state_vector[4] = - g_inv[0][0]*E + g_inv[1][0]*L_z;
@@ -48,8 +30,6 @@ double* initialize_velocity(double* state_vector, Params* p, double** g, double 
                             - g[1][1] * state_vector[5] * state_vector[5] 
                             - 2*g[1][0] * state_vector[4] * state_vector[5] 
                             - g[2][2] * state_vector[6] * state_vector[6])/g[3][3]);
-
-    return state_vector;
 }
 
 void print_array(double *arr, int len, char* text) {
@@ -59,68 +39,59 @@ void print_array(double *arr, int len, char* text) {
     printf("\n");
 }
 
-double* eq_of_motion(double* state_vector, Params* p, double** g, double g_inv[4][4], double*** dg) {
+void eq_of_motion(double state_vector[8], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double Christoffel[4][4][4], double output[8]) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     update_dg(state_vector[2], state_vector[3], dg, p);
-    double*** Christoffel = generate_Christoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg);
+    update_Christoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg, Christoffel);
 
-    double* dydt = (double*)calloc(8, sizeof(double));
     double vel[4];
     for (int i = 0; i < 4; i++) {
-        dydt[i] = state_vector[i+4];
+        output[i] = state_vector[i+4];
         vel[i] = state_vector[i+4];
+        output[i+4] = 0.0;
     }
 
     for (int coords = 0; coords < 4; coords++) {
         for (int kappa = 0; kappa < 4; kappa++) {
             for (int lambda = 0; lambda < 4; lambda++) {
-                dydt[coords + 4] -= Christoffel[coords][kappa][lambda] * vel[kappa] * vel[lambda];
+                output[coords + 4] -= Christoffel[coords][kappa][lambda] * vel[kappa] * vel[lambda];
             }
         }
     }
-    free_Christoffel(Christoffel);
-
-    return dydt;
 }
 
-double* rk4(double* state_vector, Params* p, double** g, double g_inv[4][4], double*** dg) {
-    double input[8];
+void rk4(double state_vector[8], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double Christoffel[4][4][4]) {
+    double k1[8], k2[8], k3[8], k4[8], input[8];
     
-    double* k1 = eq_of_motion(state_vector, p, g, g_inv, dg);
+    eq_of_motion(state_vector, p, g, g_inv, dg, Christoffel, k1);
     for (int i = 0; i < 8; i++) {
         input[i] = state_vector[i] + h * k1[i]/2.0;
     }
-    double* k2 = eq_of_motion(input, p, g, g_inv, dg);
+    eq_of_motion(input, p, g, g_inv, dg, Christoffel, k2);
     for (int i = 0; i < 8; i++) {
         input[i] = state_vector[i] + h * k2[i]/2.0;
     }
-    double* k3 = eq_of_motion(input, p, g, g_inv, dg);
+    eq_of_motion(input, p, g, g_inv, dg, Christoffel, k3);
     for (int i = 0; i < 8; i++) {
         input[i] = state_vector[i] + h * k3[i];
     }
-    double* k4 = eq_of_motion(input, p, g, g_inv, dg);
+    eq_of_motion(input, p, g, g_inv, dg, Christoffel, k4);
 
-    double* result = (double*)malloc(8 * sizeof(double));
     for (int i = 0; i < 8; i++) {
-        result[i] = state_vector[i] + h * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i])/6.0;
+        state_vector[i] += h * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i])/6.0;
     }
 
-    free(k1);
-    free(k2);
-    free(k3);
-    free(k4);
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
-    return result;
 }
 
-double calculate_E(double* state_vector, Params* p, double** g) {
+double calculate_E(double* state_vector, Params* p, double g[4][4]) {
     double E = - g[0][0]*state_vector[4] - g[0][1]*state_vector[5];
     return E;
 }
 
-double calculate_L_z(double* state_vector, Params* p, double** g) {
+double calculate_L_z(double* state_vector, Params* p, double g[4][4]) {
     double L_z = g[1][1]*state_vector[5] + g[0][1]*state_vector[4];
     return L_z;
 }
@@ -136,79 +107,7 @@ double find_max(double* arr, int n) {
     return max;
 }
 
-/*
-double* rk45(double* state_vector, double* h_ptr) {
-    double h = *h_ptr;
-    double* new_state = calloc(8, sizeof(double));
-    double* star_state = calloc(8, sizeof(double));
-    double* error = malloc(8 * sizeof(double));
-    double k[6][8];
-    double temp[8];
-
-    while (1) {
-        // k1 = f(t, y)
-        double* k_temp = eq_of_motion(state_vector);
-        memcpy(k[0], k_temp, 8 * sizeof(double));
-        free(k_tem&p);
-
-        // Compute k2 to k6
-        for (int i = 1; i < 6; i++) {
-            for (int j = 0; j < 8; j++) {
-                temp[j] = state_vector[j];
-                for (int m = 0; m < i; m++) {
-                    temp[j] += h * b[i][m] * k[m][j];
-                }
-            }
-            k_temp = eq_of_motion(tem&p);
-            memcpy(k[i], k_temp, 8 * sizeof(double));
-            free(k_tem&p);
-        }
-
-        // Compute new state (4th and 5th order solutions)
-        for (int i = 0; i < 8; i++) {
-            new_state[i] = state_vector[i];
-            star_state[i] = state_vector[i];
-            for (int j = 0; j < 6; j++) {
-                new_state[i] += h * c[j][0] * k[j][i];
-                star_state[i] += h * c[j][1] * k[j][i];
-            }
-            // Error estimate (normalized)
-            double scale = abs_tol + rel_tol * fmax(fabs(state_vector[i]), fabs(new_state[i]));
-            error[i] = fabs(new_state[i] - star_state[i]) / scale;
-        }
-
-        double max_err = fmax(find_max(error, 8), 1e-8);
-
-        // Compute adaptive step size
-        double factor = 0.9 * pow(1.0 / (max_err + 1e-10), 0.2);
-        factor = fmin(2.0, fmax(0.5, factor)); // Clamp factor
-
-        double new_h = h * factor;
-
-        double dL_z = fabs(calculate_L_z(new_state) - calculate_L_z(state_vector));
-        double dE = fabs(calculate_E(new_state) - calculate_E(state_vector));
-        if (dL_z > 1e-9 || dE > 1e-9) {
-            h = h*0.1;
-        } else if (max_err <= 1.0) {
-            *h_ptr = fmin(fmax(new_h, min_h), max_h);
-            break; // Accept step
-        } else {
-            if (new_h < min_h) {
-                //fprintf(stderr, "Warning: step size too small, forcing min_h\n");
-                *h_ptr = fmin(fmax(new_h, min_h), max_h);
-                break;
-            }
-            h = new_h; // Retry with smaller h
-        }
-    }
-
-    free(star_state);
-    free(error);
-    return new_state;
-}
-*/
-
-double norm_vel(double* state_vector, Params* p, double** g) {
+double norm_vel(double* state_vector, Params* p, double g[4][4]) {
     double norm = + g[0][0] * state_vector[4] * state_vector[4]
                   + g[1][1] * state_vector[5] * state_vector[5] 
                   + 2*g[1][0] * state_vector[4] * state_vector[5] 
@@ -229,93 +128,91 @@ Params make_params(double M, double J, double alpha_const, double beta_const, do
     return p;
 }
 
-char *working_dir(char *folder_name, size_t size){
-//     time_t start_time;
-//     time(&start_time);
+void working_dir(char *folder_name, size_t size){
+    time_t start_time;
+    time(&start_time);
+    printf("Do you want to make new folder for this iteration? Y/N: ");
+    char new_folder;
+    scanf(" %c", &new_folder);
 
-//     printf("Do you want to make new folder for this iteration? Y/N: ");
-//     char new_folder;
-//     scanf(" %c", &new_folder);
-
-//     if (new_folder == 'Y') {
-//         strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
-
-//         printf("Creating new folder %s for this iteration...\n", folder_name);
-//         _mkdir(folder_name);
-
-//         strcat(folder_name, "/");
-//     } else {
-//         printf("Continuing in the same folder...\n");
-//         strcpy(folder_name, "./");
-//     };
-
-//     return folder_name;
+    if (new_folder == 'Y') {
+        strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
+        printf("Creating new folder %s for this iteration...\n", folder_name);
+        _mkdir(folder_name);
+        strcat(folder_name, "/");
+    } else {
+        printf("Continuing in the same folder...\n");
+        strcpy(folder_name, "./");
+    };
 }
 
 int main() {
-    //SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
+    printf("Program started\n");
+
+    printf("Initialization...\n");
+    printf("\t Creating variables...\n");
     time_t start_time;
     time_t cur_time;
     time(&start_time);
-    size_t save_interval = (int)1e4;
+    size_t save_interval = (int)1e5;
 
-    double** g = make_g();
-    //double** g_inv = make_g_inv();
-    double (*g_inv)[4] = make_g_inv();
-    double*** dg = make_dg();
-
-    char folder_name[512];
-    // working_dir(folder_name, sizeof(folder_name));
-
-    char filepath[512];
-    // snprintf(filepath, sizeof(filepath), "%strajectory.csv", folder_name);
-
-    strftime(folder_name, sizeof(folder_name), "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
-    snprintf(filepath, sizeof(filepath), "%s.csv", folder_name);
-
-    FILE *ftprtra = fopen(filepath, "a");
-    if (ftprtra == NULL) {
-        perror("Error opening file");
-        exit(1);
-    }
-
-    int len_poincare_iteration = 2000;
-    double r_start = 2.71;
-    double r_end = 2.7;
-    double r_step = 1.0;
+    int len_poincare_iteration = 5000;
+    double r_start = 2.7101;
+    double r_end = 2.6401;
+    double r_step = 1e-3;
     double computation_count = (r_start - r_end)/r_step*len_poincare_iteration;
     int logged_all = 0;
+    Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
+    //Params p = {.M = 1, .J = 0.33, .M2 = 0.28, .S3 = 0.05, .M4 = 0.01};
 
-    for (double init_r = r_start; init_r > r_end; init_r -= r_step) {
+    printf("\t Opening files...\n");
+    char folder_name[512];
+    working_dir(folder_name, sizeof(folder_name));
+    strftime(folder_name, sizeof(folder_name), "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
+    char metafilepath[512];
+    snprintf(metafilepath, sizeof(metafilepath), "C:/Users/simon/Documents/01School/02SOC/SOC/%s/metadata.txt", folder_name);
+    FILE *ftprmeta = fopen(metafilepath, "a");
+    fprintf(ftprmeta, "#E%f,L_z%f,M%f,J%f,M2%f,S3%f,M4%f\n", E, L_z, p.M, p.J, p.M2, p.S3, p.M4);
+    fclose(ftprmeta);
+    printf("Initialization complete.\n\n");
+    
+    printf("Starting main loop...\n");
+    int n_r = (int)round((r_start - r_end)/r_step);
+    printf("\t Starting %d processes...\n", n_r);
+    #pragma omp parallel for schedule(dynamic)
+    for (int idx = 0; idx < n_r; idx++) {
+        printf("\t\t Starting initialization of process ID %d...\n", idx);
+        double g[4][4] = {0};
+        double g_inv[4][4] = {0};
+        double dg[4][4][4] = {0};
+        double Christoffel[4][4][4] = {0};
+        double init_r = r_start - idx * r_step;
+
+        char filepath[512];
+        snprintf(filepath, sizeof(filepath), "%s/trajectory-%f.csv", folder_name, init_r);
+        FILE *ftprtra = fopen(filepath, "a");
+        fprintf(ftprtra, "init_r,r,ur\n");
+
         int logged_partial = 0;
 
-        double* state_vector = (double*)calloc(8, sizeof(double));
+        double state_vector[8] = {0};
         state_vector[2] = init_r;
         state_vector[6] = init_ur;
-        Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
-        //Params p = {.M = 1, .J = 0.33, .M2 = 0.28, .S3 = 0.05, .M4 = 0.01};
-        state_vector = initialize_velocity(state_vector, &p, g, g_inv, dg);
-        double prev_z = state_vector[3];
+        initialize_velocity(state_vector, &p, g, g_inv, dg);
         double prev_r = state_vector[2];
+        double prev_z = state_vector[3];
         double prev_ur = state_vector[6];
-        double prev_log_r = state_vector[2];
-        double prev_log_ur = state_vector[6];
-        double sum_r = 0;
-        double num_r = 0;
 
         double norm_dev = fabs(norm_vel(state_vector, &p, g) + 1)/1;
         double E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
         double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;  
-        printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
+        // printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
 
-        fprintf(ftprtra, "E%f, L_z%f, r%f, ur%f, M%f, J%f, M2%f, S3%f, M4%f\n", E, L_z, init_r, init_ur, p.M, p.J, p.M2, p.S3, p.M4);
-        print_array(state_vector, 8, "State_vector: ");
+        //print_array(state_vector, 8, "State_vector: ");
 
+        printf("\t\t Starting simulation of process ID %d...\n", idx);
         for (int n = 0; logged_partial < len_poincare_iteration; n++) {
-            //double* new_state = rk45(state_vector, &h);
-            double* new_state = rk4(state_vector, &p, g, g_inv, dg);
-            free(state_vector);
-            state_vector = new_state;
+            rk4(state_vector, &p, g, g_inv, dg, Christoffel);
             if (state_vector[2] < 1.0 || isnan(state_vector[2])) {
                 break;
             }
@@ -323,12 +220,11 @@ int main() {
             if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
                 double r0 = (state_vector[3]*prev_r - prev_z*state_vector[2])/(state_vector[3] - prev_z);
                 double ur0 = (state_vector[3]*prev_ur - prev_z*state_vector[6])/(state_vector[3] - prev_z);
-                fprintf(ftprtra, "%f, %f\n", r0, ur0);
+                fprintf(ftprtra, "%f, %f, %f\n", init_r, r0, ur0);
                 
-                prev_log_r = state_vector[2];
-                prev_log_ur = state_vector[6];
-                logged_partial += 1;
-                logged_all += 1;
+                logged_partial++;
+                #pragma omp atomic
+                logged_all++;
             }
 
             if (n%save_interval == 0) {
@@ -344,20 +240,19 @@ int main() {
                 double predicted_time = time_per_step*computation_count - diff_time;
                 predicted_time /= 3600;
                 
-                printf("Step %e | Logged %d | Time %.4f | Ends in %.4f hours | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged_partial, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
-                print_array(state_vector, 8, "State_vector: ");
+                //printf("Step %e | Logged %d | Time %.4f | Ends in %.4f hours | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged_partial, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
+                //print_array(state_vector, 8, "State_vector: ");
+                printf("Elapsed time: %.2f \t Predicted remaining time: %.2f h\n", diff_time/3600, predicted_time);
             }
 
             prev_z = state_vector[3];
             prev_r = state_vector[2];
             prev_ur = state_vector[6];
         }
-    }
-    free_g(g);
-    free_g_inv(g_inv);
-    free_dg(dg);
-    fclose(ftprtra);
-
+        printf("\tThread ID %d finished successfully.\n", idx);
+        fclose(ftprtra);
+    }   
+    printf("All threads finished successfully.\n");
     return 0;
 } 
 
