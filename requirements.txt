@@ -3,3 +3,4 @@ numpy
 dash
 plotly
 pandas
+bokeh
