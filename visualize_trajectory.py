@@ -2,8 +2,6 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 import os
-from bokeh.plotting import figure, show
-from bokeh.layouts import row
 
 def load_data():
     list_dir = os.listdir("C:\\Users\\simon\\Documents\\01School\\02SOC\\SOC")
@@ -30,7 +28,10 @@ def load_data():
 df = load_data()
 
 def compute_theta(r0, ur0, r, ur, rc):
-    angle = np.arctan2(ur, r - rc) - np.arctan2(ur0, r0 - rc)
+    try:
+        angle = np.arctan2(ur, r - rc) - np.arctan2(ur0, r0 - rc)
+    except:
+        angle = 0
     return angle if angle >= 0 else angle + 2 * np.pi
 
 def compute_center(r_values):
@@ -73,27 +74,13 @@ ax2.set_title('Poincare map')
 
 ax1.scatter(df['init_r'].unique(), rotation_numbers, s=4, marker='o')
 
-#for i, rnum in zip(df['init_r'].unique(), rotation_numbers):
-#    print(i, rnum)
+for i, rnum in zip(df['init_r'].unique(), rotation_numbers):
+    print(i, rnum)
 ax2.scatter(df.loc[:, "r"], df.loc[:, "ur"], s=0.1, cmap='viridis', marker='o') # c=poincare_map[:, 0]
 
 # ax3.scatter(rotation_numbers_header, rotation_numbers, s=4, marker='o')
 # plt.colorbar(ax1.collections[0], label='t')
 plt.show()
-
-
-# First plot: Rotation number vs r
-p1 = figure(width=450, height=400, title="", x_axis_label='r', y_axis_label='Rotation number')
-p1.xaxis.major_label_orientation = 45  # rotate x-axis labels
-
-# Second plot: ur vs r (Poincaré map)
-p2 = figure(width=450, height=400, title="Poincaré map", x_axis_label='r', y_axis_label='ur')
-
-# Arrange the two plots side by side
-layout = row(p1, p2)
-
-# Display
-show(layout)
 
 # fig, ax = plt.subplots()
 # scat = ax.scatter([], [], s=1, cmap='viridis', marker='o')
