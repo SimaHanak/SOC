@@ -20,7 +20,7 @@ const double gamma_const = 3.0;
 double h = 1e-2;
 #define M_PI 3.14159265358979323846
 
-void initialize_velocity(double state_vector[8], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4]) {
+void initialize_velocity(double state_vector[8], Params* p, double g[4][4], double g_inv[4][4]) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     state_vector[4] = - g_inv[0][0]*E + g_inv[1][0]*L_z;
@@ -131,19 +131,10 @@ Params make_params(double M, double J, double alpha_const, double beta_const, do
 void working_dir(char *folder_name, size_t size){
     time_t start_time;
     time(&start_time);
-    printf("Do you want to make new folder for this iteration? Y/N: ");
-    char new_folder;
-    scanf(" %c", &new_folder);
-
-    if (new_folder == 'Y') {
-        strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
-        printf("Creating new folder %s for this iteration...\n", folder_name);
-        _mkdir(folder_name);
-        strcat(folder_name, "/");
-    } else {
-        printf("Continuing in the same folder...\n");
-        strcpy(folder_name, "./");
-    };
+    strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
+    printf("Creating new folder %s for this iteration...\n", folder_name);
+    _mkdir(folder_name);
+    strcat(folder_name, "/");
 }
 
 int main() {
@@ -156,10 +147,10 @@ int main() {
     time(&start_time);
     size_t save_interval = (int)1e5;
 
-    int len_poincare_iteration = 5000;
-    double r_start = 2.7101;
-    double r_end = 2.6401;
-    double r_step = 1e-3;
+    int len_poincare_iteration = 500;
+    double r_start = 5;
+    double r_end = 1;
+    double r_step = 5e-3;
     double computation_count = (r_start - r_end)/r_step*len_poincare_iteration;
     int logged_all = 0;
     Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
@@ -177,9 +168,10 @@ int main() {
     printf("Initialization complete.\n\n");
     
     printf("Starting main loop...\n");
-    int n_r = (int)round((r_start - r_end)/r_step);
+    //int n_r = (int)round((r_start - r_end)/r_step);
+    int n_r = 1;
     printf("\t Starting %d processes...\n", n_r);
-    #pragma omp parallel for schedule(dynamic)
+    //#pragma omp parallel for schedule(dynamic)
     for (int idx = 0; idx < n_r; idx++) {
         printf("\t\t Starting initialization of process ID %d...\n", idx);
         double g[4][4] = {0};
@@ -211,7 +203,8 @@ int main() {
         //print_array(state_vector, 8, "State_vector: ");
 
         printf("\t\t Starting simulation of process ID %d...\n", idx);
-        for (int n = 0; logged_partial < len_poincare_iteration; n++) {
+        //for (int n = 0; logged_partial < len_poincare_iteration; n++) {
+        for (int n = 0; n < 1e5; n++) {
             rk4(state_vector, &p, g, g_inv, dg, Christoffel);
             if (state_vector[2] < 1.0 || isnan(state_vector[2])) {
                 break;
@@ -220,12 +213,13 @@ int main() {
             if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
                 double r0 = (state_vector[3]*prev_r - prev_z*state_vector[2])/(state_vector[3] - prev_z);
                 double ur0 = (state_vector[3]*prev_ur - prev_z*state_vector[6])/(state_vector[3] - prev_z);
-                fprintf(ftprtra, "%f, %f, %f\n", init_r, r0, ur0);
+                //fprintf(ftprtra, "%f,%f,%f\n", init_r, r0, ur0);
                 
                 logged_partial++;
-                #pragma omp atomic
+                //#pragma omp atomic
                 logged_all++;
             }
+            fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
 
             if (n%save_interval == 0) {
                 time(&cur_time);

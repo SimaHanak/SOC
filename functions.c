@@ -268,6 +268,10 @@ double dg_rr_z(double r, double z, Params *p) {
 
 double Det(double r, double z, Params *p) {return g_tt(r, z, p)*g_ff(r, z, p) - powl(g_tf(r, z, p), 2); }
 
+double V_eff(double r, double z, double E, double L_z, Params *p) {
+    return 1.0/g_rr(r, z, p)*(1 + (g_ff(r, z, p)*E*E + g_tt(r, z, p)*L_z*L_z + 2*g_tf(r, z, p)*E*L_z)/(Det(r, z, p)));
+}
+
 void update_g(double r, double z, double g[4][4], Params *p) {
     g[0][0] = g_tt(r, z, p);
     g[0][1] = g_tf(r, z, p);
@@ -313,10 +317,10 @@ void update_dg(double r, double z, double dg[4][4][4], Params *p) {
 void update_Christoffel_symbols(double r, double z, Params *p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double Christoffel[4][4][4]) {
     memset(Christoffel, 0, 4*4*4*sizeof(double));
 
-    for (int mu = 0; mu < 4 ; mu++){
-        for (int kappa = 0; kappa < 4 ; kappa++){
-            for (int lambda = 0; lambda < 4 ; lambda++){
-                for (int sigma = 0; sigma < 4 ; sigma++){
+    for (int mu = 0; mu < 4; mu++){
+        for (int kappa = 0; kappa < 4; kappa++){
+            for (int lambda = 0; lambda < 4; lambda++){
+                for (int sigma = 0; sigma < 4; sigma++){
                     Christoffel[mu][kappa][lambda] += 0.5*g_inv[mu][sigma]*(dg[lambda][sigma][kappa] + dg[kappa][lambda][sigma] - dg[sigma][kappa][lambda]);
                 }
             }
@@ -324,6 +328,22 @@ void update_Christoffel_symbols(double r, double z, Params *p, double g[4][4], d
     }
 }
 
+void update_Christoffel_symbols(double r, double z, Params *p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double DChristoffel[4][4][4][4]) {
+    memset(DChristoffel, 0, 4*4*4*4*sizeof(double));
+
+    for (int mu = 0; mu < 4; mu++){
+        for (int kappa = 0; kappa < 4; kappa++){
+            for (int lambda = 0; lambda < 4; lambda++){
+                for (int sigma = 0; sigma < 4; sigma++){
+                    for (int nu = 0; nu < 4; nu++) {
+                        DChristoffel[mu][kappa][lambda][nu] += 0.5*g_inv[mu][sigma]*(dg[lambda][sigma][kappa] + dg[kappa][lambda][sigma] - dg[sigma][kappa][lambda]);
+                    }
+                }
+            }
+        }
+    }
+
+}
 /* 
 const double L_z = 3;
 const double E = 0.95;

@@ -13,4 +13,6 @@ void update_g(double r, double z, double g[4][4], Params *p);
 
 void update_g_inv(double r, double z, double g_inv[4][4], Params *p);
 
+double V_eff(double r, double z, double E, double L_Z, Params *p);
+
 #endif
