@@ -27,7 +27,7 @@ def load_data():
         file_names = [name for name in file_names if name.endswith(".csv")]
         df = pd.read_csv(f"{file_path}\\{file_names[0]}", comment="#", sep=r'\s*,\s*', engine='python')
         #df = pd.read_csv(f"{file_path}/{file_names[1]}", comment="#", sep=r'\s*,\s*', engine='python')
-        return df[:100000]
+        return df
 
 df = load_data()
 print(df.head())

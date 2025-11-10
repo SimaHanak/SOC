@@ -97,7 +97,7 @@ p1.scatter(x='init_r', y='rotation_numbers',
 
 # Second plot: ur vs r (Poincaré map)
 p2 = figure(title="Poincaré map", x_axis_label='r', y_axis_label='ur', sizing_mode="stretch_both")
-p2.scatter(x='r', y='ur', source=source2, size=1, color='green', alpha=0.3)
+p2.scatter(x='r', y='ur', source=source2, size=3, color='green', alpha=0.7)
 
 # Arrange the two plots side by side
 layout = row(p1, p2, sizing_mode="stretch_both")
