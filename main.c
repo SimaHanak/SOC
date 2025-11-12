@@ -147,10 +147,10 @@ int main() {
     time(&start_time);
     size_t save_interval = (int)1e5;
 
-    int len_poincare_iteration = 500;
-    double r_start = 5;
-    double r_end = 1;
-    double r_step = 5e-3;
+    int len_poincare_iteration = 10000;
+    double r_start = 2.6883;
+    double r_end = 2.6876;
+    double r_step = 2e-5;
     double computation_count = (r_start - r_end)/r_step*len_poincare_iteration;
     int logged_all = 0;
     Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
@@ -168,10 +168,10 @@ int main() {
     printf("Initialization complete.\n\n");
     
     printf("Starting main loop...\n");
-    //int n_r = (int)round((r_start - r_end)/r_step);
-    int n_r = 1;
+    int n_r = (int)round((r_start - r_end)/r_step);
+    //int n_r = 1;
     printf("\t Starting %d processes...\n", n_r);
-    //#pragma omp parallel for schedule(dynamic)
+    #pragma omp parallel for schedule(dynamic)
     for (int idx = 0; idx < n_r; idx++) {
         printf("\t\t Starting initialization of process ID %d...\n", idx);
         double g[4][4] = {0};
@@ -190,7 +190,7 @@ int main() {
         double state_vector[8] = {0};
         state_vector[2] = init_r;
         state_vector[6] = init_ur;
-        initialize_velocity(state_vector, &p, g, g_inv, dg);
+        initialize_velocity(state_vector, &p, g, g_inv);
         double prev_r = state_vector[2];
         double prev_z = state_vector[3];
         double prev_ur = state_vector[6];
@@ -203,8 +203,8 @@ int main() {
         //print_array(state_vector, 8, "State_vector: ");
 
         printf("\t\t Starting simulation of process ID %d...\n", idx);
-        //for (int n = 0; logged_partial < len_poincare_iteration; n++) {
-        for (int n = 0; n < 1e5; n++) {
+        for (int n = 0; logged_partial < len_poincare_iteration; n++) {
+        //for (int n = 0; n < 1e5; n++) {
             rk4(state_vector, &p, g, g_inv, dg, Christoffel);
             if (state_vector[2] < 1.0 || isnan(state_vector[2])) {
                 break;
@@ -213,22 +213,22 @@ int main() {
             if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
                 double r0 = (state_vector[3]*prev_r - prev_z*state_vector[2])/(state_vector[3] - prev_z);
                 double ur0 = (state_vector[3]*prev_ur - prev_z*state_vector[6])/(state_vector[3] - prev_z);
-                //fprintf(ftprtra, "%f,%f,%f\n", init_r, r0, ur0);
+                fprintf(ftprtra, "%f,%f,%f\n", init_r, r0, ur0);
                 
                 logged_partial++;
-                //#pragma omp atomic
+                #pragma omp atomic
                 logged_all++;
             }
-            fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
+            //fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
 
             if (n%save_interval == 0) {
                 time(&cur_time);
 
                 update_g(state_vector[2], state_vector[3], g, &p);
                 update_g_inv(state_vector[2], state_vector[3], g_inv, &p);
-                norm_dev = - fabs(norm_vel(state_vector, &p, g) + 1)/1;
-                E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
-                L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
+                //norm_dev = - fabs(norm_vel(state_vector, &p, g) + 1)/1;
+                //E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
+                //L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
                 double diff_time = difftime(cur_time, start_time);
                 double time_per_step = diff_time/(double)logged_all;
                 double predicted_time = time_per_step*computation_count - diff_time;
@@ -236,7 +236,7 @@ int main() {
                 
                 //printf("Step %e | Logged %d | Time %.4f | Ends in %.4f hours | Relative deviations:     norm: %e    E: %e   L_z: %e \n", (double)n, logged_partial, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
                 //print_array(state_vector, 8, "State_vector: ");
-                printf("Elapsed time: %.2f \t Predicted remaining time: %.2f h\n", diff_time/3600, predicted_time);
+                printf("Elapsed time: %.2f \t Predicted remaining time: %.2f h \t Process %d is %.2f done.\n", diff_time/3600, predicted_time, idx, (double)logged_partial/(double)len_poincare_iteration);
             }
 
             prev_z = state_vector[3];

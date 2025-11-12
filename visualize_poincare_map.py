@@ -91,12 +91,17 @@ source2 = ColumnDataSource(data=dict(
 
 # First plot: Rotation number vs r
 p1 = figure(title="Rotation numbers", x_axis_label='r', y_axis_label='Rotation number', sizing_mode="stretch_both")
-p1.xaxis.major_label_orientation = 45  # rotate x-axis labels
+p1.axis.axis_label_text_font_size = "14pt"
+p1.axis.major_label_text_font_size = "12pt"
+p1.title.text_font_size = "16pt"
 p1.scatter(x='init_r', y='rotation_numbers',
            source=source1, size=4, marker='circle', color='navy', alpha=0.6)
 
 # Second plot: ur vs r (Poincaré map)
 p2 = figure(title="Poincaré map", x_axis_label='r', y_axis_label='ur', sizing_mode="stretch_both")
+p2.axis.axis_label_text_font_size = "14pt"
+p2.axis.major_label_text_font_size = "12pt"
+p2.title.text_font_size = "16pt"
 p2.scatter(x='r', y='ur', source=source2, size=3, color='green', alpha=0.7)
 
 # Arrange the two plots side by side
