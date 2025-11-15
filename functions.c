@@ -30,6 +30,7 @@ double dA_z(double r, double z, Params *p) {
     return term1 + term2 + term3;
 }
 
+
 double B(double r, double z, Params *p) {
     double term1 = powl(r, 4)*(10*(*p).J*(*p).J + 10*(*p).M2*powl((*p).M, 3) + 21*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
     double term2 = 4*powl(z, 4)*(-40*(*p).J*(*p).J*(*p).M*(*p).M - 14*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 30*(*p).M2*powl((*p).M, 3) + 14*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
@@ -51,6 +52,7 @@ double dB_z(double r, double z, Params *p) {
     return term1 + term2 + term3;
 }
 
+
 double H(double r, double z, Params *p) {
     double term1 = 4*r*r*z*z*((*p).J*((*p).M2 - 2*powl((*p).M, 3)) - 3*(*p).M*(*p).S3);
     double term2 = powl(r, 4)*((*p).J*(*p).M2 + 3*(*p).M*(*p).S3);
@@ -68,6 +70,7 @@ double dH_z(double r, double z, Params *p) {
     double term2 = 0;
     return term1 + term2;
 }
+
 
 double G(double r, double z, Params *p) {
     double term1 = powl((*p).J, 3)*(- powl(r, 4)
@@ -127,6 +130,7 @@ double dG_z(double r, double z, Params *p) {
     
     return r*r*(term1 + term2 + term3);
 }
+
 
 double F(double r, double z, Params *p) {
     return (+ powl(r, 4)*((*p).S3 - (*p).J*(*p).M*(*p).M)
@@ -189,6 +193,30 @@ double ddf_r_r(double r, double z, Params *p) {
     double term5 = 4*((*p).M*(*p).M2*(-pyth*pyth + 19*r*r*pyth-3*powl(r, 4)) + 3*z*z*((*p).J*(*p).J + powl((*p).M, 4) + 2*(*p).M*(*p).M2)*(-pyth + 12*r*r))/powl(pyth, 7);
     double term6 = (ddA_r_r(r, z, p)*pyth*pyth - 18*dA_r(r, z, p)*r*pyth - 9*A(r, z, p)*(pyth - 11*r*r))/powl(pyth, 13.0/2.0);
     double term7 = (ddB_r_r(r, z, p)*pyth*pyth - 20*dB_(r, z, p)*r*pyth - 10*B(r, z, p)*(pyth - 12*r*r))/powl(pyth, 7);
+    return term1 + term2 + term3 + term4 + term5 + term6 + term7;
+}
+
+double ddf_r_z(double r, double z, Params *p) {
+    double pyth = pythagorean(r, z, p);
+    double term1 = 0;
+    double term2 = - 6*(*p).M*r*z/powl(pyth, 5.0/2.0);
+    double term3 = 16*(*p).M*(*p).M*r*z/powl(pyth, 3);
+    double term4 = r*(2*z*pyth*(9*(*p).M2 + 11*powl((*p).M, 3)) + 15*z*((*p).M2 - powl((*p).M, 3))*(r*r - 2*z*z))/powl(pyth, 5.0/2.0);
+    double term5 = 24*r*(((*p).M*(*p).M2*z)*(pyth - 8 + 4*r*r) + z*(-(*p).J*(*p).J + powl((*p).M, 4))*(-pyth + 4*z*z))/powl(pyth, 5);
+    double term6 = (ddA_r_z(r, z, p)*pyth*pyth - 9*dA_r(r, z, p)*z*pyth - 9*dA_z(r, z, p)*r*pyth + 99*A(r, z, p)*r*z)/(28*powl(pyth, 13.0/2.0));
+    double term7 = (ddB_r_z(r, z, p)*pyth*pyth - 10*dB_r(r, z, p)*z*pyth - 10*dB_z(r, z, p)*r*pyth + 120*A(r, z, p)*r*z)/(14*powl(pyth, 7));
+    return term1 + term2 + term3 + term4 + term5 + term6 + term7;
+}
+
+double ddf_z_z(double r, double z, Params *p) {
+    double pyth = pythagorean(r, z, p);
+    double term1 = 0;
+    double term2 = 2*(*p).M*(pyth - 3*z*z)/powl(pyth, 5.0/2.0);
+    double term3 = - 4*(*p).M*(*p).M*(pyth - 4*z*z)/powl(pyth, 3);
+    double term4 = (2*(powl((*p).M, 3) + (*p).M2)*(-2*pyth*pyth + 18*z*z*pyth + 15*powl(z, 4)) + 5*r*r*((*p).M2 - powl((*p).M, 3))*(- pyth + 3*z*z))/powl(pyth, 5.0/2.0);
+    double term5 = 4*((-15*z*z*pyth + pyth*pyth + 24*powl(z, 4))*(-(*p).J*(*p).J + powl((*p).M, 4) + 2*(*p).M2*(*p).M) + 3*r*r*(*p).M*(*p).M2*(pyth - 8*z*z))/powl(pyth, 5);
+    double term6 = (ddA_z_z(r, z, p)*pyth*pyth - 18*dA_z(r, z, p)*z*pyth - 9*A(r, z, p)*(pyth - 11*z*z))/(28*powl(pyth, 13.0/2.0));
+    double term7 = (ddB_z_z(r, z, p)*pyth*pyth - 20*dB_z(r, z, p)*z*pyth - 10*B(r, z, p)*(pyth - 12*z*z))/(14*powl(pyth, 7));
     return term1 + term2 + term3 + term4 + term5 + term6 + term7;
 }
 
