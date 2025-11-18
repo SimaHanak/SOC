@@ -5,7 +5,6 @@
 #include <string.h>
 #include <omp.h>
 #include <time.h>
-#include <direct.h>
 
 const double L_z = 3.0;
 const double E = 0.95;
@@ -137,6 +136,11 @@ void working_dir(char *folder_name, size_t size){
     strcat(folder_name, "/");
 }
 
+void norm_dev(double state_vector[16], Params *p) {
+    double lin_el = line_element(state_vector[8], state_vector[9], state_vector[10], state_vector[11]);
+
+}
+
 int main() {
     printf("Program started\n");
 
@@ -180,7 +184,7 @@ int main() {
     double state_vector[16] = {0};
     state_vector[2] = init_r;
     state_vector[6] = init_ur;
-    state_vector[10] = 1.0; //TODO
+    state_vector[10] = 1.0;
     initialize_velocity(state_vector, &p, g, g_inv);
     double prev_r = state_vector[2];
     double prev_z = state_vector[3];
@@ -206,6 +210,8 @@ int main() {
             fprintf(ftprtra, "%f,%f,%f\n", init_r, r0, ur0);
         }
         //fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
+
+        norm_dev(start_vector, &p);
 
         if (n%save_interval == 0) {
             time(&cur_time);

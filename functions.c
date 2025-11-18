@@ -591,6 +591,12 @@ double V_eff(double r, double z, double E, double L_z, Params *p) {
     return 1.0/g_rr(r, z, p)*(1 + (g_ff(r, z, p)*E*E + g_tt(r, z, p)*L_z*L_z + 2*g_tf(r, z, p)*E*L_z)/(Det(r, z, p)));
 }
 
+double line_element(double dt, double dphi, double r, double z, Params *p) {
+    double term1 = -f(r, z, p)*powl(dt - omega(r, z, p)*dphi, 2);
+    double term2 = (exp(2*my_gamma(r, z, p))*(r*r + z*z) + r*r*dphi)/f(r, z, p);
+    return sqrt(abs(term1 + term2));
+}
+
 void update_g(double r, double z, double g[4][4], Params *p) {
     g[0][0] = g_tt(r, z, p);
     g[0][1] = g_tf(r, z, p);

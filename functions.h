@@ -19,4 +19,6 @@ void update_g_inv(double r, double z, double g_inv[4][4], Params *p);
 
 double V_eff(double r, double z, double E, double L_Z, Params *p);
 
+double line_element(double dt, double dphi, double r, double z, Params *p);
+
 #endif
