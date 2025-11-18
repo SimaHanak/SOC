@@ -7,6 +7,10 @@ typedef struct {
 
 void update_Christoffel_symbols(double r, double z, Params *p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double Christoffel[4][4][4]);
 
+void update_DChristoffel_symbols(double r, double z, Params *p, double g[4][4], double g_inv[4][4], double dg_inv[4][4][4], double dg[4][4][4], double ddg[4][4][4][4], double DChristoffel[4][4][4][4]);
+
+void update_ddg(double r, double z, double ddg[4][4][4][4], Params *p);
+
 void update_dg(double r, double z, double dg[4][4][4], Params* p);
 
 void update_g(double r, double z, double g[4][4], Params *p);

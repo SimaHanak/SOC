@@ -19,15 +19,29 @@ double A(double r, double z, Params *p) {
 double dA_r(double r, double z, Params *p) {
     double term1 = 16*r*z*z*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
     double term2 = 4*powl(r, 3)*(-10*(*p).J*(*p).J*(*p).M + 7*powl((*p).M, 5) + 32*(*p).M2*(*p).M*(*p).M - 21*(*p).M4);
-    double term3 = 0;
-    return term1 + term2 + term3;
+    return term1 + term2;
 }
 
 double dA_z(double r, double z, Params *p) {
     double term1 = 16*r*r*z*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
-    double term2 = 0;
-    double term3 = 32*powl(z, 3)*(20*(*p).J*(*p).J*(*p).M - 7*powl((*p).M, 5) - 22*(*p).M2*(*p).M*(*p).M - 7*(*p).M4);
-    return term1 + term2 + term3;
+    double term2 = 32*powl(z, 3)*(20*(*p).J*(*p).J*(*p).M - 7*powl((*p).M, 5) - 22*(*p).M2*(*p).M*(*p).M - 7*(*p).M4);
+    return term1 + term2;
+}
+
+double ddA_r_r(double r, double z, Params *p) {
+    double term1 = 16*z*z*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
+    double term2 = 12*r*r*(-10*(*p).J*(*p).J*(*p).M + 7*powl((*p).M, 5) + 32*(*p).M2*(*p).M*(*p).M - 21*(*p).M4);
+    return term1 + term2;
+}
+
+double ddA_r_z(double r, double z, Params *p) {
+    return 32*r*z*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
+}
+
+double ddA_z_z(double r, double z, Params *p) {
+    double term1 = 16*r*r*(24*(*p).J*(*p).J*(*p).M + 17*(*p).M*(*p).M*(*p).M2 + 21*(*p).M4);
+    double term2 = 96*z*z*(20*(*p).J*(*p).J*(*p).M - 7*powl((*p).M, 5) - 22*(*p).M2*(*p).M*(*p).M - 7*(*p).M4);
+    return term1 + term2;
 }
 
 
@@ -40,16 +54,30 @@ double B(double r, double z, Params *p) {
 
 double dB_r(double r, double z, Params *p) {
     double term1 = 4*powl(r, 3)*(10*(*p).J*(*p).J*(*p).M*(*p).M + 10*(*p).M2*powl((*p).M, 3) + 21*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
-    double term2 = 0;
-    double term3 = - 8*r*z*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
-    return term1 + term2 + term3;
+    double term2 = - 8*r*z*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    return term1 + term2;
 }
 
 double dB_z(double r, double z, Params *p) {
-    double term1 = 0;
-    double term2 = 16*powl(z, 3)*(-40*(*p).J*(*p).J*(*p).M*(*p).M - 14*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 30*(*p).M2*powl((*p).M, 3) + 14*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
-    double term3 = - 8*r*r*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
-    return term1 + term2 + term3;
+    double term1 = 16*powl(z, 3)*(-40*(*p).J*(*p).J*(*p).M*(*p).M - 14*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 30*(*p).M2*powl((*p).M, 3) + 14*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    double term2 = - 8*r*r*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    return term1 + term2;
+}
+
+double ddB_r_r(double r, double z, Params *p) {
+    double term1 = 12*r*r*(10*(*p).J*(*p).J*(*p).M*(*p).M + 10*(*p).M2*powl((*p).M, 3) + 21*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    double term2 = - 8*z*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    return term1 + term2;
+}
+
+double ddB_r_z(double r, double z, Params *p) {
+    return - 16*r*z*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+}
+
+double ddB_z_z(double r, double z, Params *p) {
+    double term1 = 48*z*z*(-40*(*p).J*(*p).J*(*p).M*(*p).M - 14*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 30*(*p).M2*powl((*p).M, 3) + 14*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    double term2 = - 8*r*r*(27*(*p).J*(*p).J*(*p).M*(*p).M - 21*(*p).J*(*p).S3 + 7*powl((*p).M, 6) + 48*(*p).M2*powl((*p).M, 3) + 42*(*p).M4*(*p).M + 7*(*p).M2*(*p).M2);
+    return term1 + term2;
 }
 
 
@@ -66,9 +94,21 @@ double dH_r(double r, double z, Params *p) {
 }
 
 double dH_z(double r, double z, Params *p) {
-    double term1 = 8*r*r*z*((*p).J*((*p).M2 - 2*powl((*p).M, 3)) - 3*(*p).M*(*p).S3);
-    double term2 = 0;
+    return 8*r*r*z*((*p).J*((*p).M2 - 2*powl((*p).M, 3)) - 3*(*p).M*(*p).S3);
+}
+
+double ddH_r_r(double r, double z, Params *p) {
+    double term1 = 8*z*z*((*p).J*((*p).M2 - 2*powl((*p).M, 3)) - 3*(*p).M*(*p).S3);
+    double term2 = 12*r*r*((*p).J*(*p).M2 + 3*(*p).M*(*p).S3);
     return term1 + term2;
+}
+
+double ddH_r_z(double r, double z, Params *p) {
+    return 16*r*z*((*p).J*((*p).M2 - 2*powl((*p).M, 3)) - 3*(*p).M*(*p).S3);
+}
+
+double ddH_z_z(double r, double z, Params *p) {
+    return 8*r*r*((*p).J*((*p).M2 - 2*powl((*p).M, 3)) - 3*(*p).M*(*p).S3);
 }
 
 
@@ -116,19 +156,72 @@ double dG_r(double r, double z, Params *p) {
 }
 
 double dG_z(double r, double z, Params *p) {
-    double term1 = powl((*p).J, 3)*(- 0
-                                - 32*powl(z, 3)
-                                + 24*r*r*z);
-
-    double term2 = (*p).J*(*p).M*(+ 0 
-                            - 32*(3*powl((*p).M, 3) + 2*(*p).M2)*powl(z, 3)
-                            + 8*(powl((*p).M, 3) + 10*(*p).M2)*r*r*z);
-
-    double term3 = (*p).M*(*p).M*(*p).S3*(+ 0
-                                 - 160*powl(z, 3)
-                                 + 24*r*r*z);
+    double term1 = powl((*p).J, 3)*(- 4*z*z + 3*r*r);
+    double term2 = (*p).J*(*p).M*(- 4*z*z*(3*powl((*p).M, 3) + 2*(*p).M2) + (powl((*p).M, 3) + 10*(*p).M2)*r*r);
+    double term3 = (*p).M*(*p).M*(*p).S3*(- 20*z*z + 3*r*r);
     
-    return r*r*(term1 + term2 + term3);
+    return 8*z*r*r*(term1 + term2 + term3);
+}
+
+double ddG_r_r(double r, double z, Params *p) {
+    double term1 = powl((*p).J, 3)*(- powl(r, 4)
+                                    - 8*powl(z, 4)
+                                    + 12*r*r*z*z);
+
+    double term2 = (*p).J*(*p).M*(+ (powl((*p).M, 3) + 2*(*p).M2)*powl(r, 4) 
+                                  - 8*(3*powl((*p).M, 3) + 2*(*p).M2)*powl(z, 4)
+                                  + 4*(powl((*p).M, 3) + 10*(*p).M2)*r*r*z*z);
+
+    double term3 = (*p).M*(*p).M*(*p).S3*(+ 3*powl(r, 4)
+                                          - 40*powl(z, 4)
+                                          + 12*r*r*z*z);
+
+    double left = r*r;
+    double dright = 4*r*(powl((*p).J, 3)*(- r*r + 8*z*z)
+                        + (*p).J*(*p).M*(r*r*(powl((*p).M, 3) + 2*(*p).M2) + 2*z*z*(powl((*p).M, 3) + 10*(*p).M2))
+                        + 3*(*p).M*(*p).M*(*p).S3*(r*r + 2*z*z));
+    double ddright = 4*(*p).J*powl((*p).M, 4)*(3*r*r + 2*z*z) + 8*(*p).J*(*p).M*(*p).M2*(3*r*r + 10*z*z) + 4*powl((*p).J, 3)*(-3*r*r + 8*z*z) + 6*r*(*p).M*(*p).M*(*p).S3;
+    double right = term1 + term2 + term3;
+    double dleft = 2*r;
+    double ddleft = 2;
+    return left*ddright + 2*dleft*dright + right*ddleft;
+}
+
+double ddG_r_z(double r, double z, Params *p) {
+    double term1 = powl((*p).J, 3)*(- powl(r, 4)
+                                    - 8*powl(z, 4)
+                                    + 12*r*r*z*z);
+
+    double term2 = (*p).J*(*p).M*(+ (powl((*p).M, 3) + 2*(*p).M2)*powl(r, 4) 
+                                  - 8*(3*powl((*p).M, 3) + 2*(*p).M2)*powl(z, 4)
+                                  + 4*(powl((*p).M, 3) + 10*(*p).M2)*r*r*z*z);
+
+    double term3 = (*p).M*(*p).M*(*p).S3*(+ 3*powl(r, 4)
+                                          - 40*powl(z, 4)
+                                          + 12*r*r*z*z);
+
+    double left = r*r;
+    double dright_z = 8*z*(*p).J*(*p).J*(-4*z*z + 3*r*r) + 8*z*(*p).J*(*p).M*(- 4*z*z*(3*powl((*p).M, 3) + 2*(*p).M2) + r*r*(powl((*p).M, 3) + 10*(*p).M2)) + 8*z*(*p).M*(*p).M*(-20*z*z + 3*r*r);
+    double ddright = 4*z*(16*r*powl((*p).J, 3) + 4*r*(*p).J*(*p).M*(powl((*p).M, 3) + 10*(*p).M2) + 3*(*p).M*(*p).M*(*p).S3);
+    double right = term1 + term2 + term3;
+    double dleft_r = 2*r;
+    return left*ddright + dleft_r*dright_z;
+}
+
+double ddG_z_z(double r, double z, Params *p) {
+    double term1 = - 8*z*powl((*p).J, 3);
+    double term2 = - 8*z*(*p).J*(*p).M*(3*powl((*p).M, 3) + 2*(*p).M2);
+    double term3 = - 40*z*(*p).M*(*p).M*(*p).S3;
+
+    double dright = term1 + term2 + term3;
+    
+    term1 = powl((*p).J, 3)*(- 4*z*z + 3*r*r);
+    term2 = (*p).J*(*p).M*(- 4*z*z*(3*powl((*p).M, 3) + 2*(*p).M2) + (powl((*p).M, 3) + 10*(*p).M2)*r*r);
+    term3 = (*p).M*(*p).M*(*p).S3*(- 20*z*z + 3*r*r);
+
+    double right = term1 + term2 + term3;
+
+    return 8*r*r*(z*dright + right);
 }
 
 
@@ -143,8 +236,20 @@ double dF_r(double r, double z, Params *p) {
 }
 
 double dF_z(double r, double z, Params *p) {
-    return (+ 0
-            - 8*r*r*z*((*p).J*(*p).M*(*p).M + (*p).S3)); 
+    return (- 8*r*r*z*((*p).J*(*p).M*(*p).M + (*p).S3)); 
+}
+
+double ddF_r_r(double r, double z, Params *p) {
+    return (+ 12*r*r*((*p).S3 - (*p).J*(*p).M*(*p).M)
+            - 8*z*z*((*p).J*(*p).M*(*p).M + (*p).S3)); 
+}
+
+double ddF_r_z(double r, double z, Params *p) {
+    return (- 16*r*z*((*p).J*(*p).M*(*p).M + (*p).S3));
+}
+
+double ddF_z_z(double r, double z, Params *p) {
+    return - 8*r*r*((*p).J*(*p).M*(*p).M + (*p).S3); 
 }
 
 
