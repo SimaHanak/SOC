@@ -5,6 +5,7 @@
 #include <string.h>
 #include <omp.h>
 #include <time.h>
+#include <sys/stat.h>
 
 const double L_z = 3.0;
 const double E = 0.95;
@@ -132,7 +133,7 @@ void working_dir(char *folder_name, size_t size){
     time(&start_time);
     strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
     printf("Creating new folder %s for this iteration...\n", folder_name);
-    _mkdir(folder_name);
+    mkdir(folder_name, 0755);
     strcat(folder_name, "/");
 }
 

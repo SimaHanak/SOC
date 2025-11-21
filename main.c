@@ -5,7 +5,6 @@
 #include <string.h>
 #include <omp.h>
 #include <time.h>
-#include <direct.h>
 
 const double L_z = 3.0;
 const double E = 0.95;

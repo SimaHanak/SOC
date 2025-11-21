@@ -297,7 +297,7 @@ double ddf_r_r(double r, double z, Params *p) {
     double term4 = (((*p).M2 - powl((*p).M, 3))*(2*pyth*pyth - 17*r*r*pyth + 15*powl(r, 4)) + 2*z*z*((*p).M2 - powl((*p).M, 3))*(pyth - 3*r*r))/powl(pyth, 5.0/2.0);
     double term5 = 4*((*p).M*(*p).M2*(-pyth*pyth + 19*r*r*pyth-3*powl(r, 4)) + 3*z*z*((*p).J*(*p).J + powl((*p).M, 4) + 2*(*p).M*(*p).M2)*(-pyth + 12*r*r))/powl(pyth, 7);
     double term6 = (ddA_r_r(r, z, p)*pyth*pyth - 18*dA_r(r, z, p)*r*pyth - 9*A(r, z, p)*(pyth - 11*r*r))/powl(pyth, 13.0/2.0);
-    double term7 = (ddB_r_r(r, z, p)*pyth*pyth - 20*dB_(r, z, p)*r*pyth - 10*B(r, z, p)*(pyth - 12*r*r))/powl(pyth, 7);
+    double term7 = (ddB_r_r(r, z, p)*pyth*pyth - 20*dB_r(r, z, p)*r*pyth - 10*B(r, z, p)*(pyth - 12*r*r))/powl(pyth, 7);
     return term1 + term2 + term3 + term4 + term5 + term6 + term7;
 }
 
@@ -564,7 +564,7 @@ double ddg_rr_r_z(double r, double z, Params *p) {
     double dgamma_r_val = dgamma_r(r, z, p);
     
     double num = 2*e_2gamma*dgamma_r_val*f_val - e_2gamma*df_r_val;
-    double dnum_z = 2*(2*e_2gamma*dgamma_r_val*dgamma_z_val*f_val + e_2gamma*ddgamma_r_z(r, z, p)*f_val + e_2gamma*dgamma_r_val*df_z_val) - (2*e_2gamma*dgamma_z_val*df_r_val + e_2gamma*dff_r_z(r, z, p));
+    double dnum_z = 2*(2*e_2gamma*dgamma_r_val*dgamma_z_val*f_val + e_2gamma*ddgamma_r_z(r, z, p)*f_val + e_2gamma*dgamma_r_val*df_z_val) - (2*e_2gamma*dgamma_z_val*df_r_val + e_2gamma*ddf_r_z(r, z, p));
     return (dnum_z*powl(f_val, 2) - 2*num*f_val*df_z_val)/powl(f_val, 4);
 }
 double ddg_rr_z_z(double r, double z, Params *p) {
@@ -580,10 +580,10 @@ double ddg_rr_z_z(double r, double z, Params *p) {
 
 double Det(double r, double z, Params *p) {return g_tt(r, z, p)*g_ff(r, z, p) - powl(g_tf(r, z, p), 2); }
 double Det_r(double r, double z, Params *p) {
-    return g_tt(r, z, p)*dg_ff_r(r, z, p) + dg_tt_r(r, z, p)*g_ff(r, z, p) - 2*g_tf(r, z, p)*dg_rf_r(r, z, p);
+    return g_tt(r, z, p)*dg_ff_r(r, z, p) + dg_tt_r(r, z, p)*g_ff(r, z, p) - 2*g_tf(r, z, p)*dg_tf_r(r, z, p);
 }
 double Det_z(double r, double z, Params *p) {
-    return g_tt(r, z, p)*dg_ff_z(r, z, p) + dg_tt_z(r, z, p)*g_ff(r, z, p) - 2*g_tf(r, z, p)*dg_rf_z(r, z, p);
+    return g_tt(r, z, p)*dg_ff_z(r, z, p) + dg_tt_z(r, z, p)*g_ff(r, z, p) - 2*g_tf(r, z, p)*dg_tf_z(r, z, p);
 }
 
 
@@ -644,7 +644,7 @@ void update_dg_inv(double r, double z, double dg_inv[4][4][4], Params *p) {
     double Det_r_val = Det_r(r, z, p);
     double Det_z_val = Det_z(r, z, p);
     dg_inv[0][0][2] = (dg_ff_r(r, z, p)*Det_val - g_ff(r, z, p)*Det_r_val)/(Det_val*Det_val);
-    dg_inv[0][1][2] = - (g_tf_r(r, z, p)*Det_val - g_tf(r, z, p)*Det_r_val)/(Det_val*Det_val);
+    dg_inv[0][1][2] = - (dg_tf_r(r, z, p)*Det_val - g_tf(r, z, p)*Det_r_val)/(Det_val*Det_val);
 
     dg_inv[1][0][2] = dg_inv[0][1][2];
     dg_inv[1][1][2] = (dg_tt_r(r, z, p)*Det_val - g_tt(r, z, p)*Det_r_val)/(Det_val*Det_val);
@@ -654,7 +654,7 @@ void update_dg_inv(double r, double z, double dg_inv[4][4][4], Params *p) {
     dg_inv[3][3][2] = dg_inv[2][2][2];
 
     dg_inv[0][0][3] = (dg_ff_z(r, z, p)*Det_val - g_ff(r, z, p)*Det_z_val)/(Det_val*Det_val);
-    dg_inv[0][1][3] = - (g_tf_z(r, z, p)*Det_val - g_tf(r, z, p)*Det_z_val)/(Det_val*Det_val);
+    dg_inv[0][1][3] = - (dg_tf_z(r, z, p)*Det_val - g_tf(r, z, p)*Det_z_val)/(Det_val*Det_val);
 
     dg_inv[1][0][3] = dg_inv[0][1][3];
     dg_inv[1][1][3] = (dg_tt_z(r, z, p)*Det_val - g_tt(r, z, p)*Det_z_val)/(Det_val*Det_val);
