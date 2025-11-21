@@ -136,9 +136,26 @@ void working_dir(char *folder_name, size_t size){
     strcat(folder_name, "/");
 }
 
-void norm_dev(double state_vector[16], Params *p) {
-    double lin_el = line_element(state_vector[8], state_vector[9], state_vector[10], state_vector[11]);
+double norm_geodesic_dev(double state_vector[16], Params *p) {
+    double dt = fabs(state_vector[0] - state_vector[8]);
+    double two_pi = 2*M_PI;
+    double dphi = fmod(state_vector[1] - state_vector[9], two_pi);
+    if (dphi < 0) {dphi += two_pi;}
+    double lin_el = line_element(dt, dphi, state_vector[10], state_vector[11], p);
+    for (int i = 0; i < 8; i++) {
+        state_vector[i+8] /= lin_el;
+    }
+    return lin_el;
+}
 
+double compute_measure_of_dev(double state_vector[16], double g[4][4], Params *p) {
+    double result = 0;
+    for (int mu = 0; mu < 4; mu++) {
+        for (int nu = 0; nu < 4; nu++) {
+            result += g[mu][nu]*state_vector[mu+8]*state_vector[nu+8];
+        }
+    }
+    return result;
 }
 
 int main() {
@@ -177,7 +194,7 @@ int main() {
     char filepath[512];
     snprintf(filepath, sizeof(filepath), "%s/trajectory-%f.csv", folder_name, init_r);
     FILE *ftprtra = fopen(filepath, "a");
-    fprintf(ftprtra, "init_r,r,ur\n");
+    fprintf(ftprtra, "t,deviation,norm\n");
 
     int logged_partial = 0;
 
@@ -190,9 +207,12 @@ int main() {
     double prev_z = state_vector[3];
     double prev_ur = state_vector[6];
 
+    double norm_variable = 1;
+
     double norm_dev = fabs(norm_vel(state_vector, &p, g) + 1)/1;
     double E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
-    double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;  
+    double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
+    
     printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
 
     //print_array(state_vector, 8, "State_vector: ");
@@ -211,7 +231,8 @@ int main() {
         }
         //fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
 
-        norm_dev(start_vector, &p);
+        norm_variable = norm_geodesic_dev(state_vector, &p);
+        fprintf(ftprtra, "%f, %f, %f", state_vector[0], compute_measure_of_dev(state_vector, g, &p), norm_variable);
 
         if (n%save_interval == 0) {
             time(&cur_time);
