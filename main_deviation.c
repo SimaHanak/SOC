@@ -5,7 +5,8 @@
 #include <string.h>
 #include <omp.h>
 #include <time.h>
-#include <sys/stat.h>
+//#include <sys/stat.h>
+#include <direct.h>
 
 const double L_z = 3.0;
 const double E = 0.95;
@@ -20,7 +21,7 @@ const double gamma_const = 3.0;
 double h = 1e-2;
 #define M_PI 3.14159265358979323846
 
-void initialize_velocity(double state_vector[8], Params* p, double g[4][4], double g_inv[4][4]) {
+void initialize_velocity(double state_vector[16], Params* p, double g[4][4], double g_inv[4][4]) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     state_vector[4] = - g_inv[0][0]*E + g_inv[1][0]*L_z;
@@ -32,17 +33,41 @@ void initialize_velocity(double state_vector[8], Params* p, double g[4][4], doub
                             - g[2][2] * state_vector[6] * state_vector[6])/g[3][3]);
 }
 
-void print_array(double *arr, int len, char* text) {
-    printf("%s ", text);
-    for (int i = 0; i < len; i++)
-        printf("%f, ", arr[i]);
+void print_arr(double arr[], int size) {
+    for (int i = 0; i < size; i++) {
+        printf("%f ", arr[i]);
+    }
     printf("\n");
+}
+
+void print_NDIM(double *arr, int ndim, int dim, int offset) {
+    if (dim == ndim - 1) {
+        // Base case: last dimension
+        for (int i = 0; i < 4; i++) {
+            printf("%f ", arr[offset + i]);
+        }
+        printf("\n");
+        return;
+    }
+
+    // Size of a block of the remaining dimensions
+    int block = 1;
+    for (int i = dim + 1; i < ndim; i++)
+        block *= 4;
+
+    // Iterate through this dimension
+    for (int i = 0; i < 4; i++) {
+        print_NDIM(arr, ndim, dim + 1, offset + i * block);
+        if (dim == 0) printf("\n");
+    }
 }
 
 void eq_of_motion(double state_vector[16], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double dg_inv[4][4][4], double ddg[4][4][4][4], double Christoffel[4][4][4], double DChristoffel[4][4][4][4], double output[16]) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     update_dg(state_vector[2], state_vector[3], dg, p);
+    update_dg_inv(state_vector[2], state_vector[3], dg_inv, p);
+    update_ddg(state_vector[2], state_vector[3], ddg, p);
     update_Christoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg, Christoffel);
     update_DChristoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg_inv, dg, ddg, DChristoffel);
 
@@ -62,8 +87,9 @@ void eq_of_motion(double state_vector[16], Params* p, double g[4][4], double g_i
 }
 
 void rk4(double state_vector[16], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double dg_inv[4][4][4], double ddg[4][4][4][4], double Christoffel[4][4][4], double DChristoffel[4][4][4][4]) {
-    double k1[16], k2[16], k3[16], k4[16], input[16];
-    
+    double k1[16] = {0}, k2[16] = {0}, k3[16] = {0}, k4[16] = {0}, input[16] = {0};
+    printf("RK4: ");
+    print_arr(state_vector, 16);
     eq_of_motion(state_vector, p, g, g_inv, dg, dg_inv, ddg, Christoffel, DChristoffel, k1);
     for (int i = 0; i < 16; i++) {
         input[i] = state_vector[i] + h * k1[i]/2.0;
@@ -133,7 +159,7 @@ void working_dir(char *folder_name, size_t size){
     time(&start_time);
     strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
     printf("Creating new folder %s for this iteration...\n", folder_name);
-    mkdir(folder_name, 0755);
+    _mkdir(folder_name);
     strcat(folder_name, "/");
 }
 
@@ -146,7 +172,9 @@ double norm_geodesic_dev(double state_vector[16], Params *p) {
     for (int i = 0; i < 8; i++) {
         state_vector[i+8] /= lin_el;
     }
+    
     return lin_el;
+
 }
 
 double compute_measure_of_dev(double state_vector[16], double g[4][4], Params *p) {
@@ -167,7 +195,7 @@ int main() {
     time_t start_time;
     time_t cur_time;
     time(&start_time);
-    size_t save_interval = (int)1e5;
+    size_t save_interval = (int)1e3;
 
     double computation_count = 1e7;
     Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
@@ -215,21 +243,22 @@ int main() {
     double L_z_dev = fabs(calculate_L_z(state_vector, &p, g) - L_z)/L_z;
     
     printf("norm: %e    E: %e   L_z: %e \n", norm_dev, E_dev, L_z_dev);
+    print_arr(state_vector, 16);
 
     //print_array(state_vector, 8, "State_vector: ");
 
     printf("Starting simulation...\n");
-    for (int n = 0; n < 1e5; n++) {
+    for (int n = 0; n < computation_count; n++) {
         rk4(state_vector, &p, g, g_inv, dg, dg_inv, ddg, Christoffel, DChristoffel);
-        if (state_vector[2] < 1.0 || isnan(state_vector[2])) {
+        if (state_vector[2] < 1.0 || isnan(state_vector[2]) || isnan(state_vector[10])) {
             break;
         }
 
-        if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
-            double r0 = (state_vector[3]*prev_r - prev_z*state_vector[2])/(state_vector[3] - prev_z);
-            double ur0 = (state_vector[3]*prev_ur - prev_z*state_vector[6])/(state_vector[3] - prev_z);
-            fprintf(ftprtra, "%f,%f,%f\n", init_r, r0, ur0);
-        }
+        // if ((sgn(prev_z) != sgn(state_vector[3])) && (sgn(state_vector[7]) == 1) && (n != 0)) {
+        //     double r0 = (state_vector[3]*prev_r - prev_z*state_vector[2])/(state_vector[3] - prev_z);
+        //     double ur0 = (state_vector[3]*prev_ur - prev_z*state_vector[6])/(state_vector[3] - prev_z);
+        //     fprintf(ftprtra, "%f,%f,%f\n", init_r, r0, ur0);
+        // }
         //fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
 
         norm_variable = norm_geodesic_dev(state_vector, &p);

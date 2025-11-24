@@ -13,6 +13,8 @@ void update_ddg(double r, double z, double ddg[4][4][4][4], Params *p);
 
 void update_dg(double r, double z, double dg[4][4][4], Params* p);
 
+void update_dg_inv(double r, double z, double dg_inv[4][4][4], Params* p);
+
 void update_g(double r, double z, double g[4][4], Params *p);
 
 void update_g_inv(double r, double z, double g_inv[4][4], Params *p);
