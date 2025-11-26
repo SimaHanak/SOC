@@ -10,7 +10,7 @@
 
 const double L_z = 3.0;
 const double E = 0.95;
-const double init_r = 2.705;
+const double init_r = 2.68;
 const double init_ur = 0;
 const double M = 1.0;
 const double J = 0.3;
@@ -88,8 +88,6 @@ void eq_of_motion(double state_vector[16], Params* p, double g[4][4], double g_i
 
 void rk4(double state_vector[16], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double dg_inv[4][4][4], double ddg[4][4][4][4], double Christoffel[4][4][4], double DChristoffel[4][4][4][4]) {
     double k1[16] = {0}, k2[16] = {0}, k3[16] = {0}, k4[16] = {0}, input[16] = {0};
-    printf("RK4: ");
-    print_arr(state_vector, 16);
     eq_of_motion(state_vector, p, g, g_inv, dg, dg_inv, ddg, Christoffel, DChristoffel, k1);
     for (int i = 0; i < 16; i++) {
         input[i] = state_vector[i] + h * k1[i]/2.0;
@@ -108,8 +106,8 @@ void rk4(double state_vector[16], Params* p, double g[4][4], double g_inv[4][4],
         state_vector[i] += h * (k1[i] + 2*k2[i] + 2*k3[i] + k4[i])/6.0;
     }
 
-//    update_g(state_vector[2], state_vector[3], g, p);
-//    update_g_inv(state_vector[2], state_vector[3], g_inv, p);
+    update_g(state_vector[2], state_vector[3], g, p);
+    update_g_inv(state_vector[2], state_vector[3], g_inv, p);
 }
 
 double calculate_E(double state_vector[16], Params* p, double g[4][4]) {
@@ -163,20 +161,6 @@ void working_dir(char *folder_name, size_t size){
     strcat(folder_name, "/");
 }
 
-double norm_geodesic_dev(double state_vector[16], Params *p) {
-    double dt = fabs(state_vector[0] - state_vector[8]);
-    double two_pi = 2*M_PI;
-    double dphi = fmod(state_vector[1] - state_vector[9], two_pi);
-    if (dphi < 0) {dphi += two_pi;}
-    double lin_el = line_element(dt, dphi, state_vector[10], state_vector[11], p);
-    for (int i = 0; i < 8; i++) {
-        state_vector[i+8] /= lin_el;
-    }
-    
-    return lin_el;
-
-}
-
 double compute_measure_of_dev(double state_vector[16], double g[4][4], Params *p) {
     double result = 0;
     for (int mu = 0; mu < 4; mu++) {
@@ -184,7 +168,7 @@ double compute_measure_of_dev(double state_vector[16], double g[4][4], Params *p
             result += g[mu][nu]*state_vector[mu+8]*state_vector[nu+8];
         }
     }
-    return result;
+    return sqrt(abs(result));
 }
 
 int main() {
@@ -223,20 +207,18 @@ int main() {
     char filepath[512];
     snprintf(filepath, sizeof(filepath), "%s/trajectory-%f.csv", folder_name, init_r);
     FILE *ftprtra = fopen(filepath, "a");
-    fprintf(ftprtra, "t,deviation,norm\n");
-
-    int logged_partial = 0;
+    fprintf(ftprtra, "t,sum_log_stretch\n");
 
     double state_vector[16] = {0};
     state_vector[2] = init_r;
     state_vector[6] = init_ur;
-    state_vector[10] = 1.0;
+    state_vector[10] = 1;
     initialize_velocity(state_vector, &p, g, g_inv);
     double prev_r = state_vector[2];
     double prev_z = state_vector[3];
     double prev_ur = state_vector[6];
 
-    double norm_variable = 1;
+    double dev_log_sum = 0;
 
     double norm_dev = fabs(norm_vel(state_vector, &p, g) + 1)/1;
     double E_dev = fabs(calculate_E(state_vector, &p, g) - E)/E;
@@ -261,8 +243,14 @@ int main() {
         // }
         //fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
 
-        norm_variable = norm_geodesic_dev(state_vector, &p);
-        fprintf(ftprtra, "%f, %f, %f", state_vector[0], compute_measure_of_dev(state_vector, g, &p), norm_variable);
+        if (n%50 == 0) {
+            double measure_of_dev = compute_measure_of_dev(state_vector, g, &p);
+            dev_log_sum += log10(measure_of_dev);
+            for (int i = 0; i < 8; i++) {
+                state_vector[i+8] /= measure_of_dev;
+            }
+            fprintf(ftprtra, "%f,%f\n", state_vector[0], dev_log_sum);
+        }
 
         if (n%save_interval == 0) {
             time(&cur_time);
@@ -276,7 +264,7 @@ int main() {
             double predicted_time = time_per_step*computation_count - diff_time;
             predicted_time /= 3600;
             
-            printf("Step %e | Logged %d | Time %.4f | Ends in %.4f hours | norm: %e    E: %e   L_z: %e \n", (double)n, logged_partial, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
+            printf("Step %e | Time %.4f | Ends in %.4f hours | norm: %e    E: %e   L_z: %e \n", (double)n, diff_time, predicted_time, norm_dev, E_dev, L_z_dev);
             //print_array(state_vector, 8, "State_vector: ");
         }
 
