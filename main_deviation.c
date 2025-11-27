@@ -5,8 +5,15 @@
 #include <string.h>
 #include <omp.h>
 #include <time.h>
-//#include <sys/stat.h>
+
+#ifdef _WIN32
 #include <direct.h>
+#define MKDIR(x) _mkdir(x)
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#define MKDIR(x) mkdir(x, 0755)
+#endif
 
 const double L_z = 3.0;
 const double E = 0.95;
@@ -19,14 +26,17 @@ const double beta_const = 0.2;
 const double gamma_const = 3.0;
 
 double h = 1e-2;
+
+#ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
 
 void initialize_velocity(double state_vector[16], Params* p, double g[4][4], double g_inv[4][4]) {
     update_g(state_vector[2], state_vector[3], g, p);
     update_g_inv(state_vector[2], state_vector[3], g_inv, p);
     state_vector[4] = - g_inv[0][0]*E + g_inv[1][0]*L_z;
     state_vector[5] = g_inv[1][1]*L_z - g_inv[1][0]*E;
-    state_vector[7] = sqrtl((- 1
+    state_vector[7] = sqrt((- 1
                             - g[0][0] * state_vector[4] * state_vector[4]
                             - g[1][1] * state_vector[5] * state_vector[5] 
                             - 2*g[1][0] * state_vector[4] * state_vector[5] 
@@ -157,8 +167,11 @@ void working_dir(char *folder_name, size_t size){
     time(&start_time);
     strftime(folder_name, size, "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
     printf("Creating new folder %s for this iteration...\n", folder_name);
-    _mkdir(folder_name);
-    strcat(folder_name, "/");
+    if (MKDIR(folder_name) != 0) {
+        perror("mkdir failed");
+        exit(EXIT_FAILURE);
+    }
+    printf("Folder created.");
 }
 
 double compute_measure_of_dev(double state_vector[16], double g[4][4], Params *p) {
@@ -168,7 +181,7 @@ double compute_measure_of_dev(double state_vector[16], double g[4][4], Params *p
             result += g[mu][nu]*state_vector[mu+8]*state_vector[nu+8];
         }
     }
-    return sqrt(abs(result));
+    return sqrt(fabs(result));
 }
 
 int main() {
@@ -188,10 +201,15 @@ int main() {
     printf("\t Opening files...\n");
     char folder_name[512];
     working_dir(folder_name, sizeof(folder_name));
-    strftime(folder_name, sizeof(folder_name), "%Y-%m-%d_%H-%M-%S", localtime(&start_time));
-    char metafilepath[512];
-    snprintf(metafilepath, sizeof(metafilepath), "C:/Users/simon/Documents/01School/02SOC/SOC/%s/metadata.txt", folder_name);
+    char metafilepath[1024];
+    //snprintf(metafilepath, sizeof(metafilepath), "C:/Users/simon/Documents/01School/02SOC/SOC/%s/metadata.txt", folder_name);
+    snprintf(metafilepath, sizeof(metafilepath), "/home/shanak/Documents/[01] Studium/SOČ/%s/metadata.txt", folder_name);
     FILE *ftprmeta = fopen(metafilepath, "a");
+    if (!ftprmeta) {
+        perror("fopen failed");
+        fprintf(stderr, "Path: %s\n", metafilepath);
+        exit(EXIT_FAILURE);
+    }
     fprintf(ftprmeta, "#E%f,L_z%f,M%f,J%f,M2%f,S3%f,M4%f\n", E, L_z, p.M, p.J, p.M2, p.S3, p.M4);
     fclose(ftprmeta);
     printf("Initialization complete.\n\n");
@@ -204,7 +222,7 @@ int main() {
     double Christoffel[4][4][4] = {0};
     double DChristoffel[4][4][4][4] = {0};
 
-    char filepath[512];
+    char filepath[1024];
     snprintf(filepath, sizeof(filepath), "%s/trajectory-%f.csv", folder_name, init_r);
     FILE *ftprtra = fopen(filepath, "a");
     fprintf(ftprtra, "t,sum_log_stretch\n");
