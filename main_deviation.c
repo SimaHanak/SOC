@@ -230,7 +230,7 @@ int main() {
     double state_vector[16] = {0};
     state_vector[2] = init_r;
     state_vector[6] = init_ur;
-    state_vector[10] = 1;
+    state_vector[10] = 1.0;
     initialize_velocity(state_vector, &p, g, g_inv);
     double prev_r = state_vector[2];
     double prev_z = state_vector[3];

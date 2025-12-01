@@ -784,83 +784,20 @@ void print_NDIM(double *arr, int ndim, int dim, int offset) {
     }
 }
 
-void eq_of_motion(double state_vector[16], Params* p, double g[4][4], double g_inv[4][4], double dg[4][4][4], double dg_inv[4][4][4], double ddg[4][4][4][4], double Christoffel[4][4][4], double DChristoffel[4][4][4][4], double output[16]) {
-    update_g(state_vector[2], state_vector[3], g, p);
-    update_g_inv(state_vector[2], state_vector[3], g_inv, p);
-    update_dg(state_vector[2], state_vector[3], dg, p);
-    update_dg_inv(state_vector[2], state_vector[3], dg_inv, p);
-    update_ddg(state_vector[2], state_vector[3], ddg, p);
-    update_Christoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg, Christoffel);
-    update_DChristoffel_symbols(state_vector[2], state_vector[3], p, g, g_inv, dg_inv, dg, ddg, DChristoffel);
-
-    for (int i = 0; i < 4; i++) {
-        output[i] = state_vector[i+4];
-        output[i+8] = state_vector[i+12];
-        for (int kappa = 0; kappa < 4; kappa++) {
-            for (int lambda = 0; lambda < 4; lambda++) {
-                output[i+4] -= Christoffel[i][kappa][lambda] * state_vector[kappa+4] * state_vector[lambda+4];
-                for (int nu = 0; nu < 4; nu++) {
-                    output[i+12] -= DChristoffel[i][kappa][lambda][nu]*state_vector[kappa+4]*state_vector[lambda+4]*state_vector[nu+8];
-                    output[i+12] -= 2*Christoffel[i][kappa][lambda]*state_vector[kappa+4]*state_vector[lambda+12];
-                }
-            }
-        }
-    }
-}
-
 int main() {
-    double g[4][4] = {0};
-    double g_inv[4][4] = {0};
-    double dg[4][4][4] = {0};
-    double dg_inv[4][4][4] = {0};
-    double ddg[4][4][4][4] = {0};
-    double Christoffel[4][4][4] = {0};
-    double DChristoffel[4][4][4][4] = {0};
-
-    double state_vector[16] = {0};
-    state_vector[2] = 2.705;
-    state_vector[10] = 1.0;
-
     Params p = make_params(M, J, alpha_const, beta_const, gamma_const);
-    initialize_velocity(state_vector, &p, g, g_inv);
-
-    print_arr(state_vector, 16);
-    printf("\n");
-    double output[16] = {0};
-    eq_of_motion(state_vector, &p, g, g_inv, dg, dg_inv, ddg, Christoffel, DChristoffel, output);
-    for (int i = 0; i < 16; i++) {
-        state_vector[i] += output[i];
-    }
-    print_arr(state_vector, 16);
-    printf("\n");
-
-    update_g(state_vector[2], state_vector[3], g, &p);
-    update_g_inv(state_vector[2], state_vector[3], g_inv, &p);
-    update_dg(state_vector[2], state_vector[3], dg, &p);
-    update_dg_inv(state_vector[2], state_vector[3], dg_inv, &p);
-    update_ddg(state_vector[2], state_vector[3], ddg, &p);
-    update_Christoffel_symbols(state_vector[2], state_vector[3], &p, g, g_inv, dg, Christoffel);
-    update_DChristoffel_symbols(state_vector[2], state_vector[3], &p, g, g_inv, dg_inv, dg, ddg, DChristoffel);
-
-    printf("g = \n");
-    print_NDIM((double*)g, 2, 0, 0);
-
-    printf("g_inv = \n");
-    print_NDIM((double*)g_inv, 2, 0, 0);
-
-    printf("dg = \n");
-    print_NDIM((double*)dg, 3, 0, 0);
-
-    printf("dg_inv = \n");
-    print_NDIM((double*)dg_inv, 3, 0, 0);
-
-    printf("ddg = \n");
-    print_NDIM((double*)ddg, 4, 0, 0);
-
-    printf("Christoffel = \n");
-    print_NDIM((double*)Christoffel, 3, 0, 0);
-
-    printf("DChristoffel = \n");
-    print_NDIM((double*)DChristoffel, 4, 0, 0);
-
+    double r = 5.0;
+    double z = 0.0;
+    double h = 1e-9;
+    double num_derivation_r_r = (domega_r(r, z, &p) - domega_r(r+h, z, &p))/h;
+    double num_derivation_r_z = (domega_r(r, z, &p) - domega_r(r, z+h, &p))/h;
+    double num_derivation_z_z = (domega_z(r, z, &p) - domega_z(r, z+h, &p))/h;
+    double analytic_derivation_r_r = ddomega_r_r(r, z, &p);
+    double analytic_derivation_r_z = ddomega_r_z(r, z, &p);
+    double analytic_derivation_z_z = ddomega_z_z(r, z, &p);
+    printf("r, r: %f = %f \n", num_derivation_r_r, analytic_derivation_r_r);
+    printf("r, z: %f = %f \n", num_derivation_r_z, analytic_derivation_r_z);
+    printf("z, z: %f = %f \n", num_derivation_z_z, analytic_derivation_z_z);
+    
+// Check: ddG_r_r, ddf_r_r, ddf_z_z, ddomega_r_r, ddomega_z_z
 }
