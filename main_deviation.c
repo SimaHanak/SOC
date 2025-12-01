@@ -202,8 +202,8 @@ int main() {
     char folder_name[512];
     working_dir(folder_name, sizeof(folder_name));
     char metafilepath[1024];
-    //snprintf(metafilepath, sizeof(metafilepath), "C:/Users/simon/Documents/01School/02SOC/SOC/%s/metadata.txt", folder_name);
-    snprintf(metafilepath, sizeof(metafilepath), "/home/shanak/Documents/[01] Studium/SOČ/%s/metadata.txt", folder_name);
+    snprintf(metafilepath, sizeof(metafilepath), "C:/Users/simon/Documents/01School/02SOC/SOC/%s/metadata.txt", folder_name);
+    //snprintf(metafilepath, sizeof(metafilepath), "/home/shanak/Documents/[01] Studium/SOČ/%s/metadata.txt", folder_name);
     FILE *ftprmeta = fopen(metafilepath, "a");
     if (!ftprmeta) {
         perror("fopen failed");
@@ -261,9 +261,9 @@ int main() {
         // }
         //fprintf(ftprtra, "%f,%f,%f\n", state_vector[1], state_vector[2], state_vector[3]);
 
-        if (n%50 == 0) {
+        if (n%200 == 0) {
             double measure_of_dev = compute_measure_of_dev(state_vector, g, &p);
-            dev_log_sum += log10(measure_of_dev);
+            dev_log_sum += log(measure_of_dev);
             for (int i = 0; i < 8; i++) {
                 state_vector[i+8] /= measure_of_dev;
             }
