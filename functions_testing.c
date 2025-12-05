@@ -428,26 +428,25 @@ double ddgamma_r_r(double r, double z, Params *p) {
 
 double ddgamma_r_z(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
-    double num1 = 4*r*r*pow(pyth, 4)*(-(*p).J*(*p).J*16*z - (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*8*z) - 32*r*r*z*pow(pyth, 3)*((*p).J*(*p).J*(r*r - 8*z*z) + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*(r*r - 4*z*z));
-    double term1 = 4*(pow(r, 3)*8*pow(pyth, 3) + 2*r*pow(pyth, 4))*(-(*p).J*(*p).J*16*z - (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*8*z);
-    double term2 = (*p).J*(*p).J*(r*r - 8*z*z) + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*(r*r - 4*z*z);
-    double term3 = - 32*z*(2*r*pow(pyth, 3)*term2 + pow(r, 3)*6*pow(pyth, 2)*term2 + 2*pow(r, 3)*pow(pyth, 3)*((*p).J*(*p).J + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)));
-    double term4 = ((term1 + term2)*pow(pyth, 8) - 256*num1*pow(pyth, 7)*r)/(256*pow(pyth, 16));
-    double num2 = 8*r*r*z*pyth;
-    double dnum2_r = 8*z*(2*r*pyth + 2*pow(r, 3));
-    double term5 = (dnum2_r*4*pow(pyth, 4) - 32*r*pow(pyth, 3)*num2)/(16*pow(pyth, 8));
-    return term4 + term5;
+    double right = (*p).J*(*p).J*(r*r - 8*z*z) + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*(r*r - 4*z*z);
+    double A = (*p).J*(*p).J + pow((*p).M, 4) + 3*(*p).M*(*p).M2;
+    double term1 = r*z*pyth*(right - 5) - 4*pow(r, 3)*z*(A*pyth - 5*right);
+    term1 /= pow(pyth, 6);
+    double term2 = 4*(*p).M*(*p).M*z*r*(2*r*r - z*z);
+    term2 /= pow(pyth, 4);
+    return term1 - term2;
 }
 
 double ddgamma_z_z(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
-    double term1 = pyth*(-2*(*p).J*(*p).J - (*p).M*(pow((*p).M, 3) + 3*(*p).M2));
-    double term2 = (*p).J*(*p).J*(r*r - 8*z*z) + (*p).M*(pow((*p).M, 3) + 3*(*p).M2)*(r*r - 4*z*z);
-    double dterm1 = 2*z*(-2*(*p).J*(*p).J - (*p).M*(pow((*p).M, 3) + 3*(*p).M2));
-    double dterm2 = -16*z*(*p).J*(*p).J - 8*z*(*p).M*(pow((*p).M, 3) + 3*(*p).M2);
-    double term3 = 2*r*r*z*(((dterm1 - dterm2)*pyth - 10*z*(term1 - term2))/pow(pyth, 6) + (term1 + term2)/pow(pyth, 5));
-    double term4 = 2*r*r*(pyth - 6*z*z)/pow(pyth, 4);
-    return term3 + term4;
+    double term1 = 2*r*r;
+    double A = pow((*p).M, 4) + 3*(*p).M*(*p).M2;
+    term1 *= (2*(*p).J*(*p).J + A)*(40*pow(z, 4) + 20*z*z*pyth - pyth*pyth) - r*r*((*p).J*(*p).J + A)*(r*r + 11*z*z);
+    term1 /= pow(pyth, 6);
+    double term2 = 2*r*r;
+    term2 *= r*r - 5*z*z;
+    term2 /= pow(pyth, 4);
+    return term1 + term2;
 }
 
 
