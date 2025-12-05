@@ -308,7 +308,7 @@ double ddf_r_z(double r, double z, Params *p) {
     double term1 = 0;
     double term2 = - 6*(*p).M*r*z/pow(pyth, 5.0/2.0);
     double term3 = 16*(*p).M*(*p).M*r*z/pow(pyth, 3);
-    double term4 = 5*r*z*((*p).M2*(- r*r - 8*z*z) + pow((*p).M, 3)*(9*r*r - 12*z*z))/pow(pyth, 9.0/2.0);
+    double term4 = 5*r*z*(r*r*(9*(*p).M2 - pow((*p).M, 3)) - 4*z*z*(3*(*p).M2 + 2*pow((*p).M, 3)))/pow(pyth, 9.0/2.0);
     double term5 = 24*r*(((*p).M*(*p).M2*z)*(pyth - 8 + 4*r*r) + z*(-(*p).J*(*p).J + pow((*p).M, 4))*(-pyth + 4*z*z))/pow(pyth, 5);
     double term6 = (ddA_r_z(r, z, p)*pyth*pyth - 9*dA_r(r, z, p)*z*pyth - 9*dA_z(r, z, p)*r*pyth + 99*A(r, z, p)*r*z)/(28*pow(pyth, 13.0/2.0));
     double term7 = (ddB_r_z(r, z, p)*pyth*pyth - 10*dB_r(r, z, p)*z*pyth - 10*dB_z(r, z, p)*r*pyth + 120*B(r, z, p)*r*z)/(14*pow(pyth, 7));
@@ -782,26 +782,16 @@ void print_NDIM(double *arr, int ndim, int dim, int offset) {
 
 double tmp(double r, double z, Params *p) {
     double pyth = pythagorean(r, z, p);
-    double term2 = (2*r*(*p).M)/(pow(pyth, 3.0/2.0));
-    double term3 = - (4*r*(*p).M*(*p).M)/(pyth*pyth);
     double term4 = (2*r*pow(pyth, 5.0/2.0)*((*p).M2 - pow((*p).M, 3)) - 5*r*pow(pyth, 3.0/2.0)*(((*p).M2 - pow((*p).M, 3))*r*r - 2*(pow((*p).M, 3) + (*p).M2)*z*z))/(pow(pyth, 5));
-    double term5 = (-4*r*pow(pyth, 3)*(*p).M*(*p).M2 - 6*r*pow(pyth, 2)*(2*z*z*(-(*p).J*(*p).J + pow((*p).M, 4) + 2*(*p).M2*(*p).M) - 2*(*p).M*(*p).M2*r*r))/(pow(pyth, 6));
-    double term6 = (pow(pyth, 9.0/2.0)*dA_r(r, z, p) - 9*r*pow(pyth, 7.0/2.0)*A(r, z, p))/(28*pow(pyth, 9));
-    double term7 = (pow(pyth, 5)*dB_r(r, z, p) - 10*r*pow(pyth, 4)*B(r, z, p))/(14*pow(pyth, 10));
     return term4;
 }
 
 
 void derivator(double r, double z, Params *p) {
-    double h = 1e-9;
+    double h = 1e-2;
     double pyth = pythagorean(r, z, p);
-    double term2 = 2*(*p).M*(pyth - 3*r*r)/pow(pyth, 5.0/2.0);
-    double term3 = - 4*(*p).M*(*p).M*(pyth - 4*r*r)/pow(pyth, 3);
-    double term4 = (10*z*z*((*p).M2 + pow((*p).M, 3))*(pyth - 7*r*r) + ((*p).M2 - pow((*p).M, 3))*(35*pow(r, 3) - 25*r*r*pyth + 2*pyth*pyth))/pow(pyth, 9.0/2.0);
-    double term5 = 4*((*p).M*(*p).M2*(-pyth*pyth + 15*r*r*pyth - 24*pow(r, 4)) + 3*z*z*(- (*p).J*(*p).J + pow((*p).M, 4) + 2*(*p).M*(*p).M2)*(-pyth + 8*r*r))/pow(pyth, 5);
-    double term6 = (ddA_r_r(r, z, p)*pyth*pyth - 20*dA_r(r, z, p)*r*pyth - 9*A(r, z, p)*(pyth - 13*r*r))/pow(pyth, 15.0/2.0);
-    double term7 = (ddB_r_r(r, z, p)*pyth*pyth - 20*dB_r(r, z, p)*r*pyth - 10*B(r, z, p)*(pyth - 12*r*r))/pow(pyth, 7);
-    printf("%f, %f \n", term4, (tmp(r, z, p) - tmp(r, z+h, p))/h);
+    double term4 = 5*r*z*(r*r*(9*(*p).M2 - pow((*p).M, 3)) - 4*z*z*(3*(*p).M2 + 2*pow((*p).M, 3)))/pow(pyth, 9.0/2.0);
+    printf("%f, %f \n", term4, (tmp(r, z+h, p) - tmp(r, z, p))/h);
 }
 
 int main() {
@@ -809,12 +799,12 @@ int main() {
     double r = 5.0;
     double z = 2.0;
     double h = 1e-9;
-    double num_derivation_r_r = (dgamma_r(r, z, &p) - dgamma_r(r+h, z, &p))/h;
-    double num_derivation_r_z = (dgamma_r(r, z, &p) - dgamma_r(r, z+h, &p))/h;
-    double num_derivation_z_z = (dgamma_z(r, z, &p) - dgamma_z(r, z+h, &p))/h;
-    double analytic_derivation_r_r = ddgamma_r_r(r, z, &p);
-    double analytic_derivation_r_z = ddgamma_r_z(r, z, &p);
-    double analytic_derivation_z_z = ddgamma_z_z(r, z, &p);
+    double num_derivation_r_r = (df_r(r, z, &p) - df_r(r+h, z, &p))/h;
+    double num_derivation_r_z = (df_r(r, z, &p) - df_r(r, z+h, &p))/h;
+    double num_derivation_z_z = (df_z(r, z, &p) - df_z(r, z+h, &p))/h;
+    double analytic_derivation_r_r = ddf_r_r(r, z, &p);
+    double analytic_derivation_r_z = ddf_r_z(r, z, &p);
+    double analytic_derivation_z_z = ddf_z_z(r, z, &p);
     printf("r, r: %f = %f \n", num_derivation_r_r, analytic_derivation_r_r);
     printf("r, z: %f = %f \n", num_derivation_r_z, analytic_derivation_r_z);
     printf("z, z: %f = %f \n", num_derivation_z_z, analytic_derivation_z_z);
