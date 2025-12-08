@@ -710,7 +710,7 @@ void update_DChristoffel_symbols(double r, double z, Params *p, double g[4][4], 
             for (int lambda = 0; lambda < 4; lambda++){
                 for (int nu = 0; nu < 4; nu++) {
                     for (int sigma = 0; sigma < 4; sigma++){
-                        DChristoffel[mu][kappa][lambda][nu] += 0.5*dg_inv[mu][sigma][nu]*(dg[lambda][sigma][kappa] + dg[kappa][lambda][sigma] - dg[sigma][kappa][lambda]);
+                        DChristoffel[mu][kappa][lambda][nu] += 0.5*dg_inv[mu][sigma][nu]*(dg[sigma][kappa][lambda] + dg[lambda][sigma][kappa] - dg[kappa][lambda][sigma]);
                         DChristoffel[mu][kappa][lambda][nu] += 0.5*g_inv[mu][sigma]*(ddg[sigma][kappa][lambda][nu] + ddg[lambda][sigma][kappa][nu] - ddg[kappa][lambda][sigma][nu]);
                     }
                 }
@@ -759,7 +759,9 @@ void print_NDIM(double *arr, int ndim, int dim, int offset) {
     if (dim == ndim - 1) {
         // Base case: last dimension
         for (int i = 0; i < 4; i++) {
-            printf("%f ", arr[offset + i]);
+            if (arr[offset + i] != 0.0) {
+                printf("%f ", arr[offset + i]);
+            }
         }
         printf("\n");
         return;
@@ -790,7 +792,15 @@ int main() {
     update_ddg(r, z, symbolic_derivation, &p);
     for (int i = 0; i < 4; i++) {
         for (int j = 0; j < 4; j++) {
-            update_dg(r, z, dg_1, &p)
+            update_dg(r, z, dg_1, &p);
+            update_dg(r-h, z, dg_2, &p);
+            numerical_derivation[i][j][2][2] = (dg_1[i][j][2] - dg_2[i][j][2])/h;
+            update_dg(r, z-h, dg_2, &p);
+            numerical_derivation[i][j][2][3] = (dg_1[i][j][2] - dg_2[i][j][2])/h;
+            numerical_derivation[i][j][3][2] = numerical_derivation[i][j][2][3];
+            numerical_derivation[i][j][3][3] = (dg_1[i][j][3] - dg_2[i][j][3])/h;
         }
     }
+    print_NDIM((double*)numerical_derivation, 4, 0, 0);
+    print_NDIM((double*)symbolic_derivation, 4, 0, 0);
 }

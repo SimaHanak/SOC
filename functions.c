@@ -710,7 +710,7 @@ void update_DChristoffel_symbols(double r, double z, Params *p, double g[4][4], 
             for (int lambda = 0; lambda < 4; lambda++){
                 for (int nu = 0; nu < 4; nu++) {
                     for (int sigma = 0; sigma < 4; sigma++){
-                        DChristoffel[mu][kappa][lambda][nu] += 0.5*dg_inv[mu][sigma][nu]*(dg[lambda][sigma][kappa] + dg[kappa][lambda][sigma] - dg[sigma][kappa][lambda]);
+                        DChristoffel[mu][kappa][lambda][nu] += 0.5*dg_inv[mu][sigma][nu]*(dg[sigma][kappa][lambda] + dg[lambda][sigma][kappa] - dg[kappa][lambda][sigma]);
                         DChristoffel[mu][kappa][lambda][nu] += 0.5*g_inv[mu][sigma]*(ddg[sigma][kappa][lambda][nu] + ddg[lambda][sigma][kappa][nu] - ddg[kappa][lambda][sigma][nu]);
                     }
                 }
@@ -719,3 +719,4 @@ void update_DChristoffel_symbols(double r, double z, Params *p, double g[4][4], 
     }
 
 }
+
