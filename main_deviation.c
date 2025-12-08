@@ -17,7 +17,7 @@
 
 const double L_z = 3.0;
 const double E = 0.95;
-const double init_r = 2.68;
+const double init_r = 5.0;
 const double init_ur = 0;
 const double M = 1.0;
 const double J = 0.3;
